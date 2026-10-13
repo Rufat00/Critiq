@@ -10,16 +10,11 @@
     "typecheck": "pnpm -r --if-present typecheck",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "db:up": "docker compose -f compose.dev.yaml up -d",
-    "db:down": "docker compose -f compose.dev.yaml down",
-    "db:logs": "docker compose -f compose.dev.yaml logs -f postgres",
     "db:generate": "pnpm --filter @critiq/db run generate",
     "db:validate": "pnpm --filter @critiq/db run validate",
     "db:migrate": "pnpm --filter @critiq/db run migrate",
     "db:deploy": "pnpm --filter @critiq/db run deploy",
-    "db:status": "pnpm --filter @critiq/db run status",
     "db:studio": "pnpm --filter @critiq/db run studio",
-    "db:seed": "pnpm --filter @critiq/db run seed",
     "db:check": "pnpm --filter @critiq/db run check"
   },
   "devDependencies": {
