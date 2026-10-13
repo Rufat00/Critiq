@@ -98,6 +98,29 @@ types only; auth secrets and Prisma stay on the server.
 The Next.js route forwards GET/POST requests to Better Auth. Cookie-changing
 auth calls currently go through that route; no Server Action auth flow is added.
 
+## Web theme and components
+
+Web uses Tailwind CSS v4 and local shadcn New York/Radix component source.
+`apps/web/components.json` enables CSS variables and maps the class helper to
+`@/lib/cn`. The supplied Base-inspired palette lives in
+`apps/web/src/app/globals.css`, imported once by the root layout. Geist is
+self-hosted through the `geist` package, so builds do not fetch Google Fonts.
+Light mode is the default; dark tokens are available without a theme toggle.
+
+The web primitives are installed through the official shadcn CLI. The `new-york`
+configuration uses one `radix-ui` package for interactions. Components cover
+buttons, form fields, dialogs and sheets, menus and search, tabs, tables,
+sidebar navigation, badges, and score/status controls. Their source is owned by
+this repository and adapted to the theme; CLI regeneration may overwrite those
+style changes. Button variants are `default`, `secondary`, `soft`, `ghost`, and
+`destructive`. `LoadingButton` keeps its width while pending. The combobox
+combines shadcn's Command and Popover and has a persistent label.
+
+`AppPage` supplies spacing and either a 760px standard column or a 1120px wide
+column. SummaryPanel, ActionTile, SettingsGroup/SettingsRow, EmptyState,
+ResultRow, CoverageIndicator, and ScoreField are small compositions of the
+installed primitives. Forms and judging workflows will use these when built.
+
 ## Package boundaries
 
 - Web authenticates requests, creates trusted context, calls core, and renders UI.

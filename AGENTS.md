@@ -21,8 +21,8 @@ They describe the target development principles, not already implemented APIs.
   purpose when approval is needed. Installing the already declared dependencies
   is routine setup.
 - Prisma is installed in `packages/db`; Better Auth is in `packages/auth` and
-  web, and Next.js/React are in web. TanStack Form, direct Zod usage, and shared
-  UI components remain intended conventions for future work.
+  web, and Next.js/React, Tailwind v4, and shadcn primitives are in web.
+  TanStack Form and direct Zod usage remain intended conventions for future work.
 - Keep the scaffold minimal. Add directories and public exports only when they
   have an implementation; do not create empty domains for symmetry.
 

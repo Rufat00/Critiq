@@ -1,0 +1,238 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  color-scheme: light;
+
+  --background: #ffffff;
+  --foreground: #202020;
+  --card: #ffffff;
+  --card-foreground: #202020;
+  --popover: #ffffff;
+  --popover-foreground: #202020;
+
+  --primary: #0000ff;
+  --primary-foreground: #ffffff;
+  --secondary: #ebebeb;
+  --secondary-foreground: #202020;
+  --muted: #f7f7f7;
+  /* Slightly darker than the reference's light labels for readability. */
+  --muted-foreground: #707070;
+  --accent: #f7f7f7;
+  --accent-foreground: #202020;
+  --destructive: #d92d42;
+  --destructive-foreground: #ffffff;
+  --border: #ededed;
+  --input: #dedede;
+  --ring: #0000ff;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #707070;
+  --sidebar-primary: #0000ff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f7f7f7;
+  --sidebar-accent-foreground: #202020;
+  --sidebar-border: #ededed;
+  --sidebar-ring: #0000ff;
+
+  /* Supporting actions use sky blue, rather than the gray secondary. */
+  --soft: #dcf1fe;
+  --soft-foreground: #1717a6;
+  --soft-hover: #cceafd;
+  --primary-hover: #0000d9;
+  --surface-hover: #f0f0f0;
+  --neutral: #171717;
+  --neutral-foreground: #ffffff;
+  --neutral-hover: #303030;
+
+  /* Judging statuses: always pair color with a label/icon. */
+  --success: #08754f;
+  --success-subtle: #e7f6ef;
+  --warning: #925900;
+  --warning-subtle: #fff3db;
+  --info: #174fbc;
+  --info-subtle: #eaf1ff;
+  --destructive-subtle: #fff0f2;
+
+  --chart-1: #0000ff;
+  --chart-2: #169cba;
+  --chart-3: #17825d;
+  --chart-4: #b87316;
+  --chart-5: #d04862;
+
+  /* Controls 12px; panels 20px; dialogs 24px; CTA buttons pill-shaped. */
+  --radius: 0.75rem;
+  --radius-panel: 1.25rem;
+  --radius-dialog: 1.5rem;
+  --ui-radius-pill: 9999px;
+
+  --ui-font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --ui-font-mono: ui-monospace, SFMono-Regular, monospace;
+
+  --shadow-ui-control: 0 1px 2px rgb(0 0 0 / 0.025);
+  --shadow-ui-popover: 0 4px 20px rgb(20 20 40 / 0.08);
+  --shadow-ui-dialog: 0 12px 40px rgb(20 20 40 / 0.1);
+  /* Screenshot modal dimming is cool gray. This is an approximation. */
+  --overlay: rgb(27 27 78 / 0.32);
+  --motion-fast: 120ms;
+  --motion-normal: 180ms;
+  --ui-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Optional adaptation. The provided screenshots only establish light mode. */
+.dark {
+  color-scheme: dark;
+  --background: #121214;
+  --foreground: #f5f5f5;
+  --card: #18181b;
+  --card-foreground: #f5f5f5;
+  --popover: #1d1d21;
+  --popover-foreground: #f5f5f5;
+  --primary: #6464ff;
+  --primary-foreground: #ffffff;
+  --secondary: #29292e;
+  --secondary-foreground: #f5f5f5;
+  --muted: #222226;
+  --muted-foreground: #a6a6b0;
+  --accent: #29292e;
+  --accent-foreground: #f5f5f5;
+  --destructive: #ff7285;
+  --destructive-foreground: #271014;
+  --border: #303036;
+  --input: #41414a;
+  --ring: #9292ff;
+  --sidebar: #121214;
+  --sidebar-foreground: #a6a6b0;
+  --sidebar-primary: #6464ff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #222226;
+  --sidebar-accent-foreground: #f5f5f5;
+  --sidebar-border: #303036;
+  --sidebar-ring: #9292ff;
+  --soft: #182e42;
+  --soft-foreground: #a6d9ff;
+  --soft-hover: #203c56;
+  --primary-hover: #7373ff;
+  --surface-hover: #303036;
+  --neutral: #f5f5f5;
+  --neutral-foreground: #171717;
+  --neutral-hover: #dedede;
+  --success: #6ed9ad;
+  --success-subtle: #142f25;
+  --warning: #f5ca7a;
+  --warning-subtle: #332a18;
+  --info: #9dc1ff;
+  --info-subtle: #182843;
+  --destructive-subtle: #351b24;
+  --chart-1: #9292ff;
+  --chart-2: #61cde1;
+  --chart-3: #6ed9ad;
+  --chart-4: #f5ca7a;
+  --chart-5: #ff90a4;
+  --shadow-ui-control: 0 1px 2px rgb(0 0 0 / 0.12);
+  --shadow-ui-popover: 0 4px 20px rgb(0 0 0 / 0.25);
+  --shadow-ui-dialog: 0 12px 40px rgb(0 0 0 / 0.3);
+  --overlay: rgb(0 0 0 / 0.6);
+}
+
+@theme inline {
+  --font-sans: var(--ui-font-sans);
+  --font-mono: var(--ui-font-mono);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-soft: var(--soft);
+  --color-soft-foreground: var(--soft-foreground);
+  --color-soft-hover: var(--soft-hover);
+  --color-primary-hover: var(--primary-hover);
+  --color-surface-hover: var(--surface-hover);
+  --color-neutral: var(--neutral);
+  --color-neutral-foreground: var(--neutral-foreground);
+  --color-neutral-hover: var(--neutral-hover);
+  --color-success: var(--success);
+  --color-success-subtle: var(--success-subtle);
+  --color-warning: var(--warning);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-info: var(--info);
+  --color-info-subtle: var(--info-subtle);
+  --color-destructive-subtle: var(--destructive-subtle);
+  --color-overlay: var(--overlay);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: var(--radius-panel);
+  --radius-3xl: var(--radius-dialog);
+  --radius-4xl: 2rem;
+  --radius-pill: var(--ui-radius-pill);
+  --shadow-control: var(--shadow-ui-control);
+  --shadow-popover: var(--shadow-ui-popover);
+  --shadow-dialog: var(--shadow-ui-dialog);
+  --ease-ui: var(--ui-ease);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  ::selection {
+    background: var(--soft);
+    color: var(--soft-foreground);
+  }
+}
+
+/* Apply these motion tokens in component classes. No universal transitions:
+ * they can interfere with dragging, sliders, chart cursors, and timers. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-normal: 0ms;
+  }
+}
+
+/* Also respect reduced motion in the installed animation utilities. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-in,
+  .animate-out {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

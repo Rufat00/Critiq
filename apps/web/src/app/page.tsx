@@ -1,8 +1,16 @@
+import { AppPage } from '@/components/app-page';
+
 export default function HomePage() {
   return (
-    <main>
-      <h1>Critiq</h1>
-      <p>Hackathon judging software.</p>
-    </main>
+    <AppPage>
+      <header className="space-y-2">
+        <h1 className="text-[28px] font-semibold tracking-[-0.025em] md:text-[32px]">
+          Critiq
+        </h1>
+        <p className="text-base text-muted-foreground">
+          Hackathon judging software.
+        </p>
+      </header>
+    </AppPage>
   );
 }
