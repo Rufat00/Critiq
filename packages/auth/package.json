@@ -1,0 +1,22 @@
+{
+  "name": "@critiq/auth",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@critiq/db": "workspace:*",
+    "@better-auth/prisma-adapter": "1.7.7",
+    "better-auth": "1.7.7",
+    "@better-auth/utils": "0.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.2",
+    "typescript": "5.9.3"
+  }
+}

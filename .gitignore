@@ -4,6 +4,7 @@ node_modules/
 
 # Next.js and build outputs
 .next/
+apps/web/next-env.d.ts
 out/
 dist/
 coverage/

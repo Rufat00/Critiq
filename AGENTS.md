@@ -9,8 +9,10 @@ They describe the target development principles, not already implemented APIs.
 
 ## Current Stage and Package Restrictions
 
-- The web app remains a placeholder. The DB package contains the approved
-  single-installation hackathon schema, client, migrations, and setup seed.
+- Web has a minimal Next.js shell, Better Auth route, and React auth client.
+  The auth package owns the server configuration; provisioning and sign-in UI
+  remain future work. The DB package contains the approved single-installation
+  hackathon schema, client, migrations, and setup seed.
   Do not build application features unless asked.
 - pnpm is the package manager. Use workspace dependencies and commit lockfile
   changes alongside manifest changes.
@@ -18,7 +20,8 @@ They describe the target development principles, not already implemented APIs.
   existing workspace packages and primitives. Explain a missing dependency's
   purpose when approval is needed. Installing the already declared dependencies
   is routine setup.
-- Prisma is installed in `packages/db`. Next.js, Zod, TanStack Form, and shared
+- Prisma is installed in `packages/db`; Better Auth is in `packages/auth` and
+  web, and Next.js/React are in web. TanStack Form, direct Zod usage, and shared
   UI components remain intended conventions for future work.
 - Keep the scaffold minimal. Add directories and public exports only when they
   have an implementation; do not create empty domains for symmetry.
@@ -27,6 +30,8 @@ They describe the target development principles, not already implemented APIs.
 
 - `apps/web`: Next.js App Router application, UI, authentication boundaries,
   route adapters, and request context creation.
+- `packages/auth`: Better Auth server configuration, identity/session helpers,
+  and authentication database access. Browser auth client and routes live in web.
 - `packages/core`: all server-side business logic, runtime validation,
   authorization, business database access, and workflow orchestration.
 - `packages/db`: Prisma schema, migrations, generated client configuration,
@@ -269,6 +274,7 @@ with clear retry actions. Never leave a blank screen, broken layout, or raw erro
 - See `packages/db/docs/data-model.md` for the supplied design notes and
   `packages/db/README.md` for enforced SQL constraints and remaining core rules.
 - Preserve the Better Auth models; auth provisioning/bootstrap is future work.
+  OTP delivery currently logs to the server console without using SMTP.
 - Use migrations for schema changes. Do not use `db push` to bypass custom SQL
   constraints. Generate the Prisma client after installing dependencies or
   changing the schema. Production uses `db:deploy`, never `db:migrate`.

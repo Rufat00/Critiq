@@ -15,7 +15,10 @@
     "db:migrate": "pnpm --filter @critiq/db run migrate",
     "db:deploy": "pnpm --filter @critiq/db run deploy",
     "db:studio": "pnpm --filter @critiq/db run studio",
-    "db:check": "pnpm --filter @critiq/db run check"
+    "db:check": "pnpm --filter @critiq/db run check",
+    "dev": "pnpm --filter @critiq/web dev",
+    "build": "pnpm --filter @critiq/web build",
+    "start": "pnpm --filter @critiq/web start"
   },
   "devDependencies": {
     "prettier": "3.8.4",
