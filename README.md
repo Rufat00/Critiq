@@ -16,7 +16,7 @@ packages/
   constants/           Browser-safe shared constants
     src/
 AGENTS.md           Development instructions
-compose.dev.yaml    Local PostgreSQL with a localhost port
+compose.dev.yaml    Local PostgreSQL and Mailpit
 compose.yaml        Production PostgreSQL foundation without a public port
 .env.example        Example local database configuration
 ```
@@ -38,9 +38,16 @@ pnpm typecheck
 pnpm format:check
 ```
 
-`pnpm db:down` stops the development database and keeps its data volume.
+`pnpm db:up` starts PostgreSQL and Mailpit. `pnpm db:down` stops both development
+services and keeps the database volume.
 `pnpm db:logs` follows database logs. Change `DB_PORT` and `DATABASE_URL`
 together if port 5432 is already in use.
+
+For SMTP testing, send mail to `127.0.0.1:1025` without authentication or TLS.
+Open the Mailpit inbox at <http://localhost:8025>. The example environment
+includes SMTP settings; application email sending is not wired up yet.
+An app running inside the Compose network should use `mailpit:1025`.
+Change `SMTP_PORT` or `MAILPIT_UI_PORT` if the host ports are already in use.
 
 ## Current scope
 
