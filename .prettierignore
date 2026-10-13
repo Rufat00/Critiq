@@ -1,0 +1,10 @@
+node_modules/
+pnpm-lock.yaml
+.next/
+out/
+dist/
+coverage/
+packages/db/generated/
+.agents/
+.codex/
+.aws/

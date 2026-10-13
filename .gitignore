@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Next.js and build outputs
+.next/
+out/
+dist/
+coverage/
+*.tsbuildinfo
+.turbo/
+
+# Prisma generated client
+packages/db/generated/
+
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+.aws/
+
+# Editor and operating system
+.DS_Store
+.idea/
+.vscode/
+*.log

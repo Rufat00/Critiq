@@ -1,0 +1,23 @@
+name: critiq
+
+# Production database foundation. Add the web service when the app and its
+# Dockerfile exist; this file does not yet deploy a running Critiq application.
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:?Set DB_NAME for production}
+      POSTGRES_USER: ${DB_USER:?Set DB_USER for production}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD for production}
+    volumes:
+      - critiq-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        ['CMD-SHELL', 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  critiq-postgres:

@@ -1,0 +1,9 @@
+{
+  "name": "@critiq/web",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@critiq/constants": "workspace:*",
+    "@critiq/core": "workspace:*"
+  }
+}

@@ -1,0 +1,570 @@
+// Critiq — single-installation, one hackathon, PostgreSQL + Prisma.
+// Better Auth core models are kept compatible with its standard Prisma adapter.
+// Email is required by the stock Better Auth user model, even in password mode.
+// In password mode a non-SMTP deployment can use username sign-in, but account
+// provisioning must still supply a valid email unless Better Auth is customized.
+// See ../README.md and ../docs/data-model.md for required database constraints and service invariants.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  JUDGE
+}
+
+enum HackathonStatus {
+  DRAFT
+  READY
+  JUDGING
+  PAUSED
+  DELIBERATION
+  COMPLETED
+}
+
+enum CategoryKind {
+  OVERALL
+  TRACK
+  CHALLENGE
+}
+
+enum JudgingMethod {
+  RELATIVE
+  RUBRIC
+}
+
+enum CategoryStatus {
+  NOT_STARTED
+  ACTIVE
+  PAUSED
+  COMPLETED
+}
+
+enum AssignmentStatus {
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+  EXPIRED
+  CANCELLED
+}
+
+enum FlagType {
+  ABSENT
+  UNAVAILABLE
+  CONFLICT
+  LOCATION_ISSUE
+  OTHER
+}
+
+enum FlagStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
+}
+
+enum InvitationStatus {
+  ACTIVE
+  REVOKED
+}
+
+// ---------------- Better Auth ----------------
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  username      String?   @unique
+  // Username plugin: configure displayUsername: false in auth.ts.
+  role          UserRole  @default(JUDGE)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+
+  categoryMemberships JudgeCategory[]
+  assignments         JudgingAssignment[] @relation("AssignedJudge")
+  evaluations         Evaluation[]        @relation("EvaluatingJudge")
+  rankings            RelativeRanking[]   @relation("RankingJudge")
+  flagsRaised         ProjectFlag[]       @relation("FlagReporter")
+  flagsResolved       ProjectFlag[]       @relation("FlagResolver")
+  invitationsCreated  Invitation[]        @relation("Inviter")
+  invitationsRedeemed Invitation[]        @relation("Invitee")
+  auditLogs           AuditLog[]          @relation("AuditActor")
+  conflicts           JudgeConflict[]
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
+
+// A one-time claim must be atomic. Never re-enable bootstrap because owner count is 0.
+model Installation {
+  id        Int       @id @default(1)
+  claimedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+// ---------------- Hackathon ----------------
+model Hackathon {
+  id         String          @id @default(cuid())
+  name       String
+  status     HackathonStatus @default(DRAFT)
+  scoreScale Int             @default(10) // Validate: only 5 or 10.
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  categories  JudgingCategory[]
+  tracks      Track[]
+  challenges  Challenge[]
+  rooms       Room[]
+  projects    Project[]
+  invitations Invitation[]
+  auditLogs   AuditLog[]
+}
+
+// The shared container for judging settings and results.
+// Each category has exactly one subtype: OVERALL, TRACK, or CHALLENGE.
+// Enforce the subtype invariant in application logic/SQL triggers.
+model JudgingCategory {
+  id                String         @id @default(cuid())
+  hackathonId       String
+  kind              CategoryKind
+  name              String
+  description       String?
+  method            JudgingMethod  @default(RELATIVE)
+  status            CategoryStatus @default(NOT_STARTED)
+  timerSeconds      Int            @default(300)
+  minEvaluations    Int            @default(4)
+  // Optional soft target: scheduler works toward this after minimum coverage.
+  targetEvaluations Int?
+  isVisible         Boolean        @default(true)
+  sortOrder         Int            @default(0)
+  startedAt         DateTime?
+  endedAt           DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  hackathon            Hackathon                 @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  track                Track?
+  challenge            Challenge?
+  rubric               Rubric?
+  judges               JudgeCategory[]
+  assignments          JudgingAssignment[]
+  evaluations          Evaluation[]
+  rankings             RelativeRanking[]
+  invitationCategories InvitationCategory[]
+  priorityProjects     CategoryProjectPriority[]
+
+  @@unique([hackathonId, name])
+  @@index([hackathonId, kind])
+}
+
+model Track {
+  id                      String   @id @default(cuid())
+  hackathonId             String
+  categoryId              String   @unique
+  // Only specialized tracks have Track rows. Overall is a JudgingCategory alone.
+  disqualifiesFromOverall Boolean  @default(false)
+  // Percentage of eligible room projects completed before rotation.
+  roomSwitchPercent       Int      @default(25)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  hackathon         Hackathon        @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  category          JudgingCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  projects          Project[]
+  rooms             TrackRoom[]
+  allowedChallenges ChallengeTrack[]
+
+  @@index([hackathonId])
+}
+
+model Challenge {
+  id          String   @id @default(cuid())
+  hackathonId String
+  categoryId  String   @unique
+  // If true, eligible projects from any specialized track can opt in.
+  allTracks   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  hackathon      Hackathon          @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  category       JudgingCategory    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  allowedTracks  ChallengeTrack[]
+  projectEntries ProjectChallenge[]
+
+  @@index([hackathonId])
+}
+
+model ChallengeTrack {
+  challengeId String
+  trackId     String
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  track       Track     @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@id([challengeId, trackId])
+}
+
+// ---------------- Locations and projects ----------------
+model Room {
+  id          String   @id @default(cuid())
+  hackathonId String
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  hackathon  Hackathon   @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  projects   Project[]
+  trackRooms TrackRoom[]
+
+  @@unique([hackathonId, name])
+}
+
+model TrackRoom {
+  id        String  @id @default(cuid())
+  trackId   String
+  roomId    String
+  sortOrder Int     @default(0)
+  isActive  Boolean @default(true)
+  // Sparse/nonconsecutive table ranges can be defined with the child model.
+
+  track       Track                 @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  room        Room                  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  tableRanges TrackRoomTableRange[]
+
+  @@unique([trackId, roomId])
+  @@index([roomId])
+}
+
+model TrackRoomTableRange {
+  id          String    @id @default(cuid())
+  trackRoomId String
+  fromNumber  Int
+  toNumber    Int
+  trackRoom   TrackRoom @relation(fields: [trackRoomId], references: [id], onDelete: Cascade)
+
+  @@unique([trackRoomId, fromNumber, toNumber])
+}
+
+model Project {
+  id             String   @id @default(cuid())
+  hackathonId    String
+  name           String
+  description    String?
+  externalId     String? // Devpost/registration-system identifier.
+  submissionUrl  String?
+  repositoryUrl  String?
+  demoUrl        String?
+  roomId         String?
+  tableNumber    Int?
+  trackId        String? // Zero or one specialized track.
+  isActive       Boolean  @default(true)
+  isDisqualified Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  hackathon   Hackathon                 @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  room        Room?                     @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  track       Track?                    @relation(fields: [trackId], references: [id], onDelete: SetNull)
+  challenges  ProjectChallenge[]
+  assignments JudgingAssignment[]
+  evaluations Evaluation[]
+  rankings    RelativeRanking[]
+  flags       ProjectFlag[]
+  priorities  CategoryProjectPriority[]
+  conflicts   JudgeConflict[]
+
+  @@unique([hackathonId, externalId])
+  @@index([trackId])
+  @@index([roomId, tableNumber])
+  @@index([hackathonId, isActive])
+}
+
+model ProjectChallenge {
+  projectId   String
+  challengeId String
+  optedInAt   DateTime  @default(now())
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, challengeId])
+  @@index([challengeId])
+}
+
+// ---------------- Judge category access ----------------
+model JudgeCategory {
+  userId        String
+  categoryId    String
+  isActive      Boolean  @default(true)
+  assignedAt    DateTime @default(now())
+  // Optional current room: scheduler can rotate this separately for each category.
+  currentRoomId String?
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category JudgingCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([userId, categoryId])
+  @@index([categoryId])
+}
+
+model JudgeConflict {
+  userId    String
+  projectId String
+  reason    String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([userId, projectId])
+}
+
+// ---------------- Rubrics ----------------
+model Rubric {
+  id         String            @id @default(cuid())
+  categoryId String            @unique
+  // Once judging starts, lock criteria/weights; versioning can be added later.
+  isLocked   Boolean           @default(false)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  category   JudgingCategory   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  criteria   RubricCriterion[]
+}
+
+model RubricCriterion {
+  id          String            @id @default(cuid())
+  rubricId    String
+  name        String
+  description String?
+  weight      Decimal           @default(1) @db.Decimal(8, 4)
+  position    Int               @default(0)
+  rubric      Rubric            @relation(fields: [rubricId], references: [id], onDelete: Cascade)
+  scores      EvaluationScore[]
+
+  @@unique([rubricId, position])
+}
+
+// ---------------- Assignments, evaluations and rankings ----------------
+model JudgingAssignment {
+  id         String           @id @default(cuid())
+  categoryId String
+  judgeId    String
+  projectId  String
+  status     AssignmentStatus @default(ASSIGNED)
+  assignedAt DateTime         @default(now())
+  startedAt  DateTime?
+  finishedAt DateTime?
+  expiresAt  DateTime?
+  skipReason String?
+  // A judge can revisit a project only if explicitly permitted by scheduler.
+  attempt    Int              @default(1)
+
+  category   JudgingCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  judge      User            @relation("AssignedJudge", fields: [judgeId], references: [id])
+  project    Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  evaluation Evaluation?
+
+  @@unique([categoryId, judgeId, projectId, attempt])
+  @@index([categoryId, status, assignedAt])
+  @@index([judgeId, status])
+  @@index([projectId, categoryId])
+}
+
+model Evaluation {
+  id           String   @id @default(cuid())
+  assignmentId String   @unique
+  categoryId   String
+  judgeId      String
+  projectId    String
+  notes        String?
+  starred      Boolean  @default(false)
+  submittedAt  DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  // Optional rubric summary (cache); raw scores remain source of truth.
+  rubricTotal  Decimal? @db.Decimal(10, 4)
+
+  assignment JudgingAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  category   JudgingCategory   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  judge      User              @relation("EvaluatingJudge", fields: [judgeId], references: [id])
+  project    Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  scores     EvaluationScore[]
+
+  @@index([categoryId, projectId])
+  @@index([categoryId, judgeId])
+}
+
+model EvaluationScore {
+  evaluationId String
+  criterionId  String
+  score        Decimal         @db.Decimal(8, 4)
+  evaluation   Evaluation      @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  criterion    RubricCriterion @relation(fields: [criterionId], references: [id], onDelete: Restrict)
+
+  @@id([evaluationId, criterionId])
+}
+
+// Each judge maintains an ordered list *within each relative-judging category*.
+// Pairwise comparisons are derived from the ranking, not stored redundantly.
+model RelativeRanking {
+  categoryId String
+  judgeId    String
+  projectId  String
+  position   Int
+  updatedAt  DateTime @updatedAt
+
+  category JudgingCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  judge    User            @relation("RankingJudge", fields: [judgeId], references: [id])
+  project  Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([categoryId, judgeId, projectId])
+  @@unique([categoryId, judgeId, position])
+  @@index([categoryId, projectId])
+}
+
+model CategoryProjectPriority {
+  categoryId String
+  projectId  String
+  priority   Int     @default(0)
+  isHidden   Boolean @default(false)
+  reason     String?
+
+  category JudgingCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  project  Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([categoryId, projectId])
+}
+
+model ProjectFlag {
+  id           String     @id @default(cuid())
+  projectId    String
+  categoryId   String?
+  reportedById String
+  resolvedById String?
+  type         FlagType
+  status       FlagStatus @default(OPEN)
+  note         String?
+  resolution   String?
+  createdAt    DateTime   @default(now())
+  resolvedAt   DateTime?
+
+  project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  reporter User    @relation("FlagReporter", fields: [reportedById], references: [id])
+  resolver User?   @relation("FlagResolver", fields: [resolvedById], references: [id])
+
+  @@index([projectId, status])
+  @@index([categoryId, status])
+}
+
+// ---------------- Invitations and audit ----------------
+model Invitation {
+  id           String           @id @default(cuid())
+  hackathonId  String
+  createdById  String
+  redeemedById String?
+  tokenHash    String           @unique
+  role         UserRole         @default(JUDGE)
+  email        String?
+  status       InvitationStatus @default(ACTIVE)
+  maxUses      Int              @default(1)
+  usedCount    Int              @default(0)
+  expiresAt    DateTime
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  hackathon   Hackathon              @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  creator     User                   @relation("Inviter", fields: [createdById], references: [id])
+  redeemedBy  User?                  @relation("Invitee", fields: [redeemedById], references: [id])
+  categories  InvitationCategory[]
+  redemptions InvitationRedemption[]
+
+  @@index([hackathonId, status, expiresAt])
+}
+
+model InvitationCategory {
+  invitationId String
+  categoryId   String
+  invitation   Invitation      @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  category     JudgingCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([invitationId, categoryId])
+}
+
+model InvitationRedemption {
+  id           String     @id @default(cuid())
+  invitationId String
+  userId       String
+  redeemedAt   DateTime   @default(now())
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+
+  @@unique([invitationId, userId])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  hackathonId String?
+  actorId     String?
+  action      String
+  entityType  String
+  entityId    String?
+  metadata    Json?
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  hackathon Hackathon? @relation(fields: [hackathonId], references: [id], onDelete: SetNull)
+  actor     User?      @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([hackathonId, createdAt])
+  @@index([entityType, entityId])
+}
