@@ -132,6 +132,37 @@ installed primitives. Forms and judging workflows will use these when built.
 Use `@critiq/*` workspace imports. Keep business database access inside core;
 web should consume core operations rather than query Prisma directly.
 
+Core operations use `createQuery({ name, schema })` or
+`createMutation({ name, schema })`. Zod schemas validate raw input and infer
+the parsed handler input. The wrapper also infers `ctx: AppContext` and returns
+`(ctx, input) => Promise<Result>` for pages or safe actions:
+
+```ts
+import { z } from 'zod';
+import { requireHackathonId } from '@critiq/core/context';
+import { createQuery } from '@critiq/core/operations';
+
+const getHackathonName = createQuery({
+  name: 'hackathons.getName',
+  schema: z.void(),
+})(async ({ ctx }) => {
+  const id = requireHackathonId(ctx);
+  return ctx.db.hackathon.findUniqueOrThrow({
+    where: { id },
+    select: { name: true },
+  });
+});
+```
+
+Use `roles: [UserRole.OWNER, UserRole.ADMIN]` to restrict an operation. For a
+mutation, pass an `audit` option beside the handler to write an audit row in the
+same transaction. Its callbacks select the entity ID and safe before/after
+snapshots; never pass raw form input or secrets to the audit record. Handlers
+still validate business state and related-record ownership. The wrappers
+preserve expected `AppError`s, normalize common Prisma conflicts, and hide
+unexpected errors from callers. Web's `createSafeAction` returns those same
+core error codes without another mapping layer.
+
 ## Production foundation
 
 `compose.yaml` provisions only PostgreSQL. Supply production credentials using

@@ -4,13 +4,17 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./context": "./src/context/index.ts",
+    "./errors": "./src/shared/errors/index.ts",
+    "./operations": "./src/shared/operations/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@critiq/constants": "workspace:*",
-    "@critiq/db": "workspace:*"
+    "@critiq/db": "workspace:*",
+    "zod": "4.6.7"
   }
 }

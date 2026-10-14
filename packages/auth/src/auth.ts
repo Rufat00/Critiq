@@ -97,7 +97,12 @@ export async function getAuthSession(
 
   const user = await db.user.findUnique({
     where: { id: session.user.id },
-    select: { isActive: true },
+    select: { isActive: true, role: true },
   });
-  return user?.isActive ? session : null;
+  if (!user?.isActive) return null;
+
+  return {
+    ...session,
+    user: { ...session.user, role: user.role },
+  };
 }
