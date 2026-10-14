@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
   experimental: { useTypeScriptCli: false },
   transpilePackages: [
     '@critiq/auth',
+    '@critiq/mail',
     '@critiq/db',
     '@critiq/core',
     '@critiq/constants',

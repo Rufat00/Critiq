@@ -12,7 +12,8 @@ try {
     });
 
     const hackathon =
-      (await tx.hackathon.findFirst()) ?? (await tx.hackathon.create());
+      (await tx.hackathon.findFirst()) ??
+      (await tx.hackathon.create({ data: {} }));
 
     const overall = await tx.judgingCategory.findFirst({
       where: { hackathonId: hackathon.id, kind: CategoryKind.OVERALL },

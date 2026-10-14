@@ -19,6 +19,7 @@ const buttonVariants = cva(
           'bg-secondary text-secondary-foreground hover:bg-surface-hover',
         soft: 'bg-soft text-soft-foreground hover:bg-soft-hover',
         ghost: 'bg-transparent text-foreground hover:bg-accent',
+        link: 'bg-transparent text-primary underline-offset-4 hover:underline',
         destructive:
           'bg-destructive text-destructive-foreground hover:bg-destructive/90',
       },

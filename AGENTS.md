@@ -22,7 +22,8 @@ They describe the target development principles, not already implemented APIs.
   is routine setup.
 - Prisma is installed in `packages/db`; Better Auth is in `packages/auth` and
   web, and Next.js/React, Tailwind v4, and shadcn primitives are in web.
-  TanStack Form and direct Zod usage remain intended conventions for future work.
+  TanStack Form is installed in web and required for all client forms. Zod is
+  installed in core for authoritative runtime validation.
 - Keep the scaffold minimal. Add directories and public exports only when they
   have an implementation; do not create empty domains for symmetry.
 
@@ -243,8 +244,16 @@ with clear retry actions. Never leave a blank screen, broken layout, or raw erro
 
 - Support page forms and button-triggered dialog forms; use drawers on phones
   when appropriate.
-- Use TanStack Form for interactive client forms and Zod for validation once
-  these dependencies are approved and installed.
+- Use TanStack Form for all interactive client forms, including authentication,
+  verification codes, setup, and future application forms. Keep authoritative
+  Zod validation in core.
+- Follow the local shadcn skill when composing UI. Use `FieldGroup`, `Field`,
+  and `FieldLabel` (which wraps the shared `Label`) for forms; use `FieldSet`
+  and `FieldLegend` for related controls.
+- Shared text inputs, textareas, and OTP inputs disable browser autocomplete
+  dropdowns by default. Leave spellcheck, capitalization, and autocorrect at
+  their normal browser defaults. Do not enable autocomplete in forms unless
+  the user requests it.
 - Map field validation failures to the shared field-error component.
 - Show a submit button loader and disable duplicate submission while pending.
 - Preserve input on recoverable failures and communicate whether a score is

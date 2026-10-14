@@ -6,7 +6,7 @@ and development principles used by Appliance-CRM, adapted to Critiq.
 ```text
 apps/
   web/              Next.js App Router application
-    src/app/        Placeholder home page and auth API route
+    src/app/        Login, registration, setup, and auth API routes
 packages/
   auth/             Better Auth server, Prisma adapter, and session helper
   core/             Server-side business logic
@@ -30,7 +30,7 @@ with Compose. If Corepack is available, `corepack enable` enables pnpm.
 ```bash
 pnpm install
 cp .env.example .env
-pnpm db:up
+docker compose -f compose.dev.yaml up -d
 pnpm db:generate
 pnpm db:deploy
 pnpm db:seed
@@ -39,24 +39,23 @@ pnpm typecheck
 pnpm format:check
 ```
 
-`pnpm db:up` starts PostgreSQL and Mailpit. `pnpm db:down` stops both development
+`docker compose -f compose.dev.yaml up -d` starts PostgreSQL and Mailpit. `docker compose -f compose.dev.yaml down` stops both development
 services and keeps the database volume.
-`pnpm db:logs` follows database logs. Change `DB_PORT` and `DATABASE_URL`
+`docker compose -f compose.dev.yaml logs -f postgres` follows database logs. Change `DB_PORT` and `DATABASE_URL`
 together if port 5432 is already in use.
 
 For SMTP testing, send mail to `127.0.0.1:1025` without authentication or TLS.
 Open the Mailpit inbox at <http://localhost:8025>. The example environment
-includes SMTP settings; application email sending is not wired up yet.
+includes SMTP settings; authentication uses the existing mail package to send codes.
 An app running inside the Compose network should use `mailpit:1025`.
 Change `SMTP_PORT` or `MAILPIT_UI_PORT` if the host ports are already in use.
 
 ## Current scope
 
-Web has a minimal Next.js shell, a Better Auth API route, and a React auth client.
-`@critiq/auth` owns server configuration and session lookup using the existing
-Prisma auth models. The DB package retains its schema, migrations, and setup seed.
-Account provisioning, owner bootstrap, sign-in screens, and judging workflows
-are not implemented yet.
+Web includes email-first login at `/`, registration at `/register`, and one-time
+owner setup. `/admin` and `/judging` are protected placeholders; the owner’s
+post-registration destination `/setup` has a “Coming later” panel. Setup sections
+and judging workflows remain future work.
 
 Run `pnpm db:generate` after installation before type checking or importing
 `@critiq/db`. Read [packages/db/README.md](packages/db/README.md) for DB commands,
@@ -74,29 +73,44 @@ runtime consumers must supply `DATABASE_URL` before importing `@critiq/db`.
 Set `APP_URL` to the app origin and `AUTH_SECRET` to a unique
 secret of at least 32 characters (generate one with `openssl rand -base64 32`).
 
-The server selects the sign-in method at startup from deployment configuration:
-nonempty `SMTP_HOST` enables email OTP; without it, email/password and
-username/password sign-in are enabled. Delivery failures never change this mode.
-The existing example SMTP configuration therefore selects OTP. OTP delivery is
-a temporary **console-only stub**: email, code, and purpose appear in the server
-terminal. No SMTP connection or mailing service is used. Replace the stub before
-using this deployment for real users. Codes expire after 10 minutes, allow five
-attempts, and are stored hashed. Public sign-up and OTP auto-registration are
-disabled, so accounts must already be provisioned. The DB seed creates no users.
+Set `SETUP_PASSCODE` to a unique value of at least 12 characters. On an unclaimed
+installation, `/` shows the setup welcome screen. A correct passcode grants
+20 minutes to register the owner. The database claim, account, and audit commit
+atomically; removing the owner never reopens setup. The seed creates no users.
 
-Import `auth`, `authMode`, or `getAuthSession(headers)` from `@critiq/auth` on
-the server. Use the session helper when creating trusted request context; it
-checks that the user remains active. New sessions also reject inactive users.
-Core still owns business permissions and assignment checks.
+Normal authentication uses six-digit email codes through `@critiq/mail`. Configure
+`EMAIL_HOST` for SMTP or `SENDGRID_API_KEY`; local Mailpit uses the example settings.
+Set `NO_EMAIL_LOWER_SECURITY_MODE=true` explicitly to use email/password sign-in
+instead. Delivery failures do not change modes. Codes expire after 10 minutes,
+allow five attempts, and are hashed at rest. Registration codes have a one-minute
+resend cooldown. OTPs and credentials are never logged.
 
-The browser client is `apps/web/src/lib/auth/auth-client.ts`. It exposes
-`authClient.useSession()`, `signIn.emailOtp`, `emailOtp.sendVerificationOtp`,
-`signIn.email`, `signIn.username`, and `signOut`, with the server enforcing which
-method is enabled. The client uses same-origin `/api/auth` and imports server
-types only; auth secrets and Prisma stay on the server.
+Registration validates a full name of at least two words, email, a password of
+8–128 characters without whitespace or invisible characters, and two agreements.
+Email mode verifies ownership
+before creating the account and discards the password. Password mode stores only
+a Better Auth password hash. Registration requires a valid invitation after the owner has claimed setup. An
+invitation at `/register?token=...` can grant an admin role or judge categories.
+Invitation-bound email is locked in the UI and enforced by core. Invitation scope,
+expiry, use limits, and category ownership are checked in the registration
+transaction. Invitation creation and delivery UI will be developed later.
 
-The Next.js route forwards GET/POST requests to Better Auth. Cookie-changing
-auth calls currently go through that route; no Server Action auth flow is added.
+Successful login routes owners/admins to `/admin` and judges to `/judging`.
+Registration signs in automatically and sends the first owner to `/setup`.
+If account creation succeeds but session creation fails, the login page confirms
+that the account is ready and lets the user sign in without registering again.
+
+The browser auth client calls same-origin `/api/auth`. Public Better Auth sign-up
+and OTP auto-registration remain disabled; registration goes through the core
+workflow. Role and activity are checked against trusted database data whenever
+web creates authentication context.
+
+Run `pnpm test:registration` and `pnpm test:auth` for focused registration, setup,
+and verification-code tests. They use a
+transactional test double to check validation, permission failures, invitation
+scope/use limits, email proofs, owner claim conflicts, and audit rollback. Live
+PostgreSQL concurrency and browser/email integration should also be checked in
+a configured development installation.
 
 ## Web theme and components
 
@@ -119,7 +133,10 @@ combines shadcn's Command and Popover and has a persistent label.
 `AppPage` supplies spacing and either a 760px standard column or a 1120px wide
 column. SummaryPanel, ActionTile, SettingsGroup/SettingsRow, EmptyState,
 ResultRow, CoverageIndicator, and ScoreField are small compositions of the
-installed primitives. Forms and judging workflows will use these when built.
+installed primitives. All client forms use TanStack Form, with shadcn Field
+composition and labels backed by the shared Label primitive. Inputs, textareas,
+and verification-code inputs disable autocomplete dropdowns by default, while
+leaving spellcheck, capitalization, and autocorrect at normal browser defaults.
 
 ## Package boundaries
 

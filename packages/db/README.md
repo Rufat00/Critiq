@@ -11,7 +11,7 @@ From the repository root:
 ```bash
 pnpm install
 cp .env.example .env # Only when .env does not already exist.
-pnpm db:up
+docker compose -f compose.dev.yaml up -d
 pnpm db:generate
 pnpm db:deploy
 pnpm db:seed
@@ -47,9 +47,10 @@ should reuse `db`, not disconnect after every request. Keep business queries in
 - `pnpm db:check`: check connectivity and expected tables through the shared client.
 
 The seed serializes concurrent setup, preserves existing configuration and
-`Installation.claimedAt`, and uses `HACKATHON_NAME` only for initial creation.
-It creates no users, passwords, or sessions. Owner bootstrap and Better Auth
-configuration belong to the later authentication workflow.
+`Installation.claimedAt`. New hackathons have no name until the owner sets one
+during setup; no hackathon-name environment variable is required.
+It creates no users, passwords, or sessions. The app’s passcode-protected
+registration flow owns the one-time owner claim.
 
 Generation/validation work without a live database. Other commands need a valid
 `DATABASE_URL`. After a fresh install run `db:generate` before type checking or

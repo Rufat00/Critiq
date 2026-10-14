@@ -1,8 +1,18 @@
+import { createSystemContext } from '@critiq/core/context';
+import { getEntryState } from '@critiq/core/registration';
+import { createMailProvider } from '@critiq/mail';
 import { db } from '@critiq/db';
 import { prismaAdapter } from '@better-auth/prisma-adapter';
 import { betterAuth } from 'better-auth/minimal';
 import { APIError, createAuthMiddleware } from 'better-auth/api';
 import { emailOTP, username } from 'better-auth/plugins';
+
+if (
+  process.env.NO_EMAIL_LOWER_SECURITY_MODE &&
+  !['true', 'false'].includes(process.env.NO_EMAIL_LOWER_SECURITY_MODE)
+) {
+  throw new Error('NO_EMAIL_LOWER_SECURITY_MODE must be true or false.');
+}
 
 const authSecret = process.env.AUTH_SECRET?.trim();
 if (!authSecret || authSecret.length < 32) {
@@ -12,7 +22,8 @@ if (!authSecret || authSecret.length < 32) {
 }
 
 // Select from deployment configuration, never from delivery success or failure.
-export const authMode = process.env.SMTP_HOST?.trim() ? 'otp' : 'password';
+export const authMode =
+  process.env.NO_EMAIL_LOWER_SECURITY_MODE === 'true' ? 'password' : 'otp';
 
 export const auth = betterAuth({
   baseURL: process.env.APP_URL?.trim() || 'http://localhost:3000',
@@ -21,7 +32,7 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: authMode === 'password',
     disableSignUp: true,
-    minPasswordLength: 12,
+    minPasswordLength: 8,
     revokeSessionsOnPasswordReset: true,
   },
   user: {
@@ -51,7 +62,9 @@ export const auth = betterAuth({
         (authMode === 'password' &&
           (context.path.startsWith('/email-otp/') ||
             context.path === '/sign-in/email-otp')) ||
-        (authMode === 'otp' && context.path === '/sign-in/username')
+        (authMode === 'otp' &&
+          (context.path === '/sign-in/username' ||
+            context.path === '/sign-in/email'))
       ) {
         throw new APIError('FORBIDDEN', {
           message: 'This sign-in method is not enabled.',
@@ -86,9 +99,16 @@ export const auth = betterAuth({
       storeOTP: 'hashed',
       resendStrategy: 'rotate',
       rateLimit: { window: 60, max: 3 },
-      async sendVerificationOTP({ email, otp, type }) {
-        // Temporary delivery stub. No SMTP connection or mailing service.
-        console.log('[Critiq auth OTP]', { email, otp, type });
+      async sendVerificationOTP({ email, otp }) {
+        const { hackathonName } = await getEntryState(
+          createSystemContext({ service: 'auth-email', source: 'worker' }),
+          {},
+        );
+        await createMailProvider(process.env, { hackathonName }).sendOTP({
+          to: email,
+          code: otp,
+          expiresInMinutes: 10,
+        });
       },
     }),
   ],
