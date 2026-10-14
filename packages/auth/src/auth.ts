@@ -4,11 +4,19 @@ import { betterAuth } from 'better-auth/minimal';
 import { APIError, createAuthMiddleware } from 'better-auth/api';
 import { emailOTP, username } from 'better-auth/plugins';
 
+const authSecret = process.env.AUTH_SECRET?.trim();
+if (!authSecret || authSecret.length < 32) {
+  throw new Error(
+    'AUTH_SECRET must be set to a random secret of at least 32 characters.',
+  );
+}
+
 // Select from deployment configuration, never from delivery success or failure.
 export const authMode = process.env.SMTP_HOST?.trim() ? 'otp' : 'password';
 
 export const auth = betterAuth({
-  baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:3000',
+  baseURL: process.env.APP_URL?.trim() || 'http://localhost:3000',
+  secret: authSecret,
   database: prismaAdapter(db, { provider: 'postgresql', transaction: true }),
   emailAndPassword: {
     enabled: authMode === 'password',

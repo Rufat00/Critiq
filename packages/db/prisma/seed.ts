@@ -12,12 +12,7 @@ try {
     });
 
     const hackathon =
-      (await tx.hackathon.findFirst()) ??
-      (await tx.hackathon.create({
-        data: {
-          name: process.env.HACKATHON_NAME?.trim() || 'Critiq Hackathon',
-        },
-      }));
+      (await tx.hackathon.findFirst()) ?? (await tx.hackathon.create());
 
     const overall = await tx.judgingCategory.findFirst({
       where: { hackathonId: hackathon.id, kind: CategoryKind.OVERALL },

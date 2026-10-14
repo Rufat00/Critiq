@@ -71,8 +71,8 @@ runtime consumers must supply `DATABASE_URL` before importing `@critiq/db`.
 
 ## Authentication
 
-Set `BETTER_AUTH_URL` to the app origin and `BETTER_AUTH_SECRET` to a unique
-secret (generate one with `openssl rand -base64 32`).
+Set `APP_URL` to the app origin and `AUTH_SECRET` to a unique
+secret of at least 32 characters (generate one with `openssl rand -base64 32`).
 
 The server selects the sign-in method at startup from deployment configuration:
 nonempty `SMTP_HOST` enables email OTP; without it, email/password and
@@ -177,3 +177,12 @@ Do not combine them as overrides. Production requires explicit database
 credentials and publishes no host database port. Add the web image/service,
 app environment and deployment configuration once the app exists. Run
 `pnpm db:deploy` to apply migrations and `pnpm db:seed` for initial provisioning.
+
+## Email package
+
+[`@critiq/mail`](packages/mail/README.md) provides standalone `sendInvite` and
+`sendOTP` delivery through Gmail SMTP, AWS SES SMTP, regular SMTP, or SendGrid,
+selected by environment variables. It includes styled HTML/plain-text templates
+and explicit `NO_EMAIL_LOWER_SECURITY_MODE` delivery opt-out. It is not yet wired
+to registration or the existing Better Auth OTP stub. See the package README for
+provider configuration, system-email requirements, tests, and local previews.
