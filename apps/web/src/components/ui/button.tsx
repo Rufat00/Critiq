@@ -1,16 +1,20 @@
+'use client';
+
 import * as React from 'react';
 import { Slot as SlotPrimitive } from 'radix-ui';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { RiLoader4Line } from '@remixicon/react';
 
 import { cn } from '@/lib/utils';
+import { Ripple } from '@/components/ui/ripple';
 
 const buttonVariants = cva(
-  'inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium shadow-none transition-colors duration-[var(--motion-fast)] ease-ui focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-45 aria-invalid:border-destructive aria-invalid:ring-destructive/20 [&_svg]:pointer-events-none [&_svg]:size-[18px] [&_svg]:shrink-0',
+  'relative inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium shadow-none transition-colors duration-[var(--motion-fast)] ease-ui focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-45 aria-invalid:border-destructive aria-invalid:ring-destructive/20 [&_svg]:pointer-events-none [&_svg]:size-[18px] [&_svg]:shrink-0',
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground hover:bg-primary-hover',
+        default:
+          'bg-primary text-primary-foreground [--ripple-color:var(--primary-foreground)] hover:bg-primary-hover',
         secondary:
           'bg-secondary text-secondary-foreground hover:bg-surface-hover',
         soft: 'bg-soft text-soft-foreground hover:bg-soft-hover',
@@ -34,17 +38,32 @@ export interface ButtonProps
     React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
+  ripple?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  (
+    {
+      className,
+      variant,
+      size,
+      asChild = false,
+      ripple = true,
+      children,
+      ...props
+    },
+    ref,
+  ) => {
     const Comp = asChild ? SlotPrimitive.Slot : 'button';
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
         {...props}
-      />
+      >
+        <SlotPrimitive.Slottable>{children}</SlotPrimitive.Slottable>
+        {ripple && <Ripple disabled={props.disabled} />}
+      </Comp>
     );
   },
 );

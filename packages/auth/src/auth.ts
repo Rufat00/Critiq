@@ -8,7 +8,6 @@ import { emailOTP, username } from 'better-auth/plugins';
 export const authMode = process.env.SMTP_HOST?.trim() ? 'otp' : 'password';
 
 export const auth = betterAuth({
-  appName: 'Critiq',
   baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:3000',
   database: prismaAdapter(db, { provider: 'postgresql', transaction: true }),
   emailAndPassword: {
