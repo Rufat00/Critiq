@@ -14,7 +14,7 @@ export function SettingsGroup({
   return (
     <section className="space-y-3">
       <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-      <div className="divide-y divide-border rounded-2xl border border-border bg-card">
+      <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
         {children}
       </div>
     </section>
@@ -68,7 +68,7 @@ export function SettingsRow({
   const rowClassName = cn(
     'flex min-h-16 items-center gap-4 px-5 py-4',
     href &&
-      'rounded-2xl hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+      'hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
   );
 
   if (href)
