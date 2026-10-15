@@ -100,6 +100,7 @@ model User {
   invitationsCreated  Invitation[]        @relation("Inviter")
   invitationsRedeemed Invitation[]        @relation("Invitee")
   auditLogs           AuditLog[]          @relation("AuditActor")
+  setupCompletions    SetupCompletion[]
   conflicts           JudgeConflict[]
 }
 
@@ -164,13 +165,14 @@ model Hackathon {
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
 
-  categories  JudgingCategory[]
-  tracks      Track[]
-  challenges  Challenge[]
-  rooms       Room[]
-  projects    Project[]
-  invitations Invitation[]
-  auditLogs   AuditLog[]
+  setupCompletions SetupCompletion[]
+  categories       JudgingCategory[]
+  tracks           Track[]
+  challenges       Challenge[]
+  rooms            Room[]
+  projects         Project[]
+  invitations      Invitation[]
+  auditLogs        AuditLog[]
 }
 
 // The shared container for judging settings and results.
@@ -189,6 +191,7 @@ model JudgingCategory {
   // Optional soft target: scheduler works toward this after minimum coverage.
   targetEvaluations Int?
   isVisible         Boolean        @default(true)
+  isEnabled         Boolean        @default(true) // Participation is independent of UI visibility.
   sortOrder         Int            @default(0)
   startedAt         DateTime?
   endedAt           DateTime?
@@ -567,4 +570,18 @@ model AuditLog {
 
   @@index([hackathonId, createdAt])
   @@index([entityType, entityId])
+}
+
+// Completion applies only to the exact configuration the organizer checked.
+model SetupCompletion {
+  hackathonId   String
+  section       String
+  fingerprint   String
+  completedById String
+  completedAt   DateTime  @default(now())
+  hackathon     Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  completedBy   User      @relation(fields: [completedById], references: [id])
+
+  @@id([hackathonId, section])
+  @@map("setup_completions")
 }

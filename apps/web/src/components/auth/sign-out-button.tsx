@@ -2,15 +2,19 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authClient } from '@/lib/auth/auth-client';
-import { LoadingButton } from '@/components/ui/button';
-export function SignOutButton() {
+import { LoadingButton, type ButtonProps } from '@/components/ui/button';
+export function SignOutButton({
+  variant = 'ghost',
+  size,
+}: Pick<ButtonProps, 'variant' | 'size'> = {}) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   return (
     <div className="flex flex-col gap-2">
       <LoadingButton
-        variant="ghost"
+        variant={variant}
+        size={size}
         loading={pending}
         onClick={async () => {
           setPending(true);

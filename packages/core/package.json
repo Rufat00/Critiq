@@ -9,6 +9,7 @@
     "./errors": "./src/shared/errors/index.ts",
     "./operations": "./src/shared/operations/index.ts",
     "./registration": "./src/registration/index.ts",
+    "./hackathon": "./src/hackathon/index.ts",
     "./setup": "./src/setup/index.ts"
   },
   "scripts": {

@@ -14,8 +14,12 @@ const badgeVariants = cva(
         info: 'bg-info-subtle text-info',
         destructive: 'bg-destructive-subtle text-destructive',
       },
+      size: {
+        default: '',
+        button: 'h-11 gap-2 px-4 text-sm md:h-9 [&_svg]:size-4',
+      },
     },
-    defaultVariants: { variant: 'default' },
+    defaultVariants: { variant: 'default', size: 'default' },
   },
 );
 
@@ -24,9 +28,12 @@ export interface BadgeProps
     React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof badgeVariants> {}
 
-function Badge({ className, variant, ...props }: BadgeProps) {
+function Badge({ className, variant, size, ...props }: BadgeProps) {
   return (
-    <div className={cn(badgeVariants({ variant }), className)} {...props} />
+    <div
+      className={cn(badgeVariants({ variant, size }), className)}
+      {...props}
+    />
   );
 }
 

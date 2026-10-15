@@ -96,3 +96,25 @@ migrations against production or use `db push` to bypass custom SQL history.
 When the app runs in Compose, use `postgres:5432` as the database hostname;
 host development uses the configured localhost port. PostgreSQL does not create
 application tables automatically: migrations remain a required setup step.
+
+## Draft setup and readiness
+
+Apply committed migrations with `pnpm db:deploy` before opening the admin home.
+Category participation (`JudgingCategory.isEnabled`) is separate from `isVisible`;
+hiding a category does not remove its readiness requirements.
+
+`SetupCompletion` stores a section fingerprint, trusted organizer, and completion
+time. The checklist covers event details, custom categories, projects, judges,
+and rooms. Overall is excluded from displayed category counts. Event creation
+completes automatically when the hackathon is named. Organizers can mark the
+other configured sections as done and undo their completion. Relevant
+configuration changes invalidate completion. Marking Ready requires a complete
+checklist as well as successful server-side readiness validation.
+
+Completion writes and Draft/Ready transitions serialize on the hackathon row
+and commit with audits. Future configuration mutations must use the same
+hackathon lock and enforce Draft status before changing competition setup.
+
+Checklist setup links open dedicated pages; there is no checklist setup drawer.
+The destination pages show saved configuration; entity editors/imports and the
+live judging/results workflows remain separate work.

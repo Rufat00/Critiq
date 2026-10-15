@@ -5,7 +5,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 import { Slot } from 'radix-ui';
 
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/lib/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { Ripple } from '@/components/ui/ripple';
 import { Input } from '@/components/ui/input';
@@ -365,7 +365,7 @@ const sidebarMenuButtonVariants = cva(
       size: {
         default: 'h-11 text-sm md:h-10',
         sm: 'h-11 text-xs md:h-8',
-        lg: 'h-12 text-sm',
+        lg: 'h-12 gap-3 rounded-2xl px-3 text-base data-[active=true]:font-medium [&>svg]:size-5',
       },
     },
     defaultVariants: {
