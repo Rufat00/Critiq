@@ -8,7 +8,8 @@
     "./context": "./src/context/index.ts",
     "./errors": "./src/shared/errors/index.ts",
     "./operations": "./src/shared/operations/index.ts",
-    "./registration": "./src/registration/index.ts"
+    "./registration": "./src/registration/index.ts",
+    "./setup": "./src/setup/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

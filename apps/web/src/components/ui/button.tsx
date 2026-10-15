@@ -83,7 +83,14 @@ const LoadingButton = React.forwardRef<HTMLButtonElement, LoadingButtonProps>(
       className={cn('relative', className)}
       {...props}
     >
-      <span className={cn(loading && 'invisible')}>{children}</span>
+      <span
+        className={cn(
+          'inline-flex items-center justify-center gap-2',
+          loading && 'invisible',
+        )}
+      >
+        {children}
+      </span>
       {loading && (
         <RiLoader4Line className="absolute animate-spin" aria-hidden="true" />
       )}

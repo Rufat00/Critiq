@@ -12,6 +12,7 @@ export const getEntryState = createQuery({
   ]);
   return {
     setupRequired: !installation?.claimedAt,
+    configurationRequired: !hackathon?.name?.trim(),
     hackathonName: hackathon?.name || 'Hackathon',
     hackathonId: hackathon?.id ?? null,
   };

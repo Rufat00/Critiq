@@ -160,7 +160,7 @@ model Hackathon {
   id         String          @id @default(cuid())
   name       String?
   status     HackathonStatus @default(DRAFT)
-  scoreScale Int             @default(10) // Validate: only 5 or 10.
+  scoreScale Int             @default(5) // Validate: only 5 or 10.
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
 
