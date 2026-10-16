@@ -24,7 +24,6 @@ export function SetupWelcome() {
         const result = await beginSetupAction(value.passcode);
         if (!result.ok) setError(result.error.message);
         else {
-          router.push('/register');
           router.refresh();
         }
       } catch {

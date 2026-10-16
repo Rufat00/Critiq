@@ -13,7 +13,7 @@ export function createMailProvider(
   env: NodeJS.ProcessEnv = process.env,
   options: MailProviderOptions = {},
 ): MailProvider {
-  if (typeof window !== 'undefined')
+  if ('window' in globalThis)
     throw new MailError(
       'CONFIGURATION',
       'The mail package may only run on the server.',

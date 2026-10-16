@@ -532,3 +532,64 @@ test('concurrent invitation redemptions cannot exceed its last use', async () =>
   assert.equal(db.read().invitation.usedCount, 1);
   assert.equal(db.read().redemptions.length, 1);
 });
+
+test('bulk QR invitations admit distinct judges concurrently up to their limit and retain track scope', async () => {
+  const db = database({
+    invitation: { ...invitation, email: null, maxUses: 2 },
+  });
+  const results = await Promise.allSettled([
+    registerAccount(db.ctx, invitedInput, passwordCredentials),
+    registerAccount(
+      db.ctx,
+      { ...invitedInput, email: 'second@example.test' },
+      passwordCredentials,
+    ),
+    registerAccount(
+      db.ctx,
+      { ...invitedInput, email: 'third@example.test' },
+      passwordCredentials,
+    ),
+  ]);
+  assert.equal(
+    results.filter((result) => result.status === 'fulfilled').length,
+    2,
+  );
+  assert.equal(db.read().users.length, 2);
+  assert.equal(db.read().invitation.usedCount, 2);
+  assert.equal(db.read().redemptions.length, 2);
+  assert.equal(
+    new Set(db.read().redemptions.map((row: { userId: string }) => row.userId))
+      .size,
+    2,
+  );
+  assert.equal(db.read().memberships.length, 2);
+  assert.ok(
+    db
+      .read()
+      .memberships.every(
+        (row: { categoryId: string }) => row.categoryId === 'category',
+      ),
+  );
+});
+
+test('opening a valid invitation does not bypass later revocation, expiry, or exhaustion when creating an account', async () => {
+  for (const changes of [
+    { status: 'REVOKED' },
+    { expiresAt: new Date(0) },
+    { usedCount: invitation.maxUses },
+  ]) {
+    const db = database({ invitation });
+    await getRegistrationAccess(db.ctx, { invitationToken: 'invite-token' });
+    Object.assign(db.read().invitation, changes);
+    await rejectsCode(
+      getRegistrationAccess(db.ctx, { invitationToken: 'invite-token' }),
+      AppErrorCode.INVALID_STATE,
+    );
+    await rejectsCode(
+      registerAccount(db.ctx, invitedInput, passwordCredentials),
+      AppErrorCode.INVALID_STATE,
+    );
+    assert.equal(db.read().users.length, 0);
+    assert.equal(db.read().redemptions.length, 0);
+  }
+});

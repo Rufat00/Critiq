@@ -23,12 +23,12 @@ import type { AppFieldErrors } from '@critiq/core/errors';
 import {
   registerAccountAction,
   requestRegistrationCodeAction,
-} from '../../actions';
+} from '@/app/(auth)/actions';
 
 import {
   withRegistrationCodeTimeout,
   RegistrationCodeTimeoutError,
-} from '../lib/with-registration-code-timeout';
+} from '@/lib/auth/with-registration-code-timeout';
 
 const validateFullName = ({ value }: { value: string }) =>
   value.trim().split(/\s+/u).filter(Boolean).length >= 2
@@ -56,12 +56,10 @@ export function RegistrationForm({
   mode,
   setup,
   invitedEmail,
-  invitationToken,
 }: {
   mode: 'otp' | 'password';
   setup: boolean;
   invitedEmail?: string | null;
-  invitationToken?: string;
 }) {
   const router = useRouter();
   const [step, setStep] = useState<'details' | 'code'>('details');
@@ -104,7 +102,7 @@ export function RegistrationForm({
     window.addEventListener('beforeunload', guard);
     return () => window.removeEventListener('beforeunload', guard);
   }, [dirty]);
-  function input(): RegisterAccountInput {
+  function input(): Omit<RegisterAccountInput, 'invitationToken'> {
     const value = form.state.values;
     return {
       ...value,
@@ -112,7 +110,6 @@ export function RegistrationForm({
       email: value.email.trim().toLowerCase(),
       agreementRules: value.agreementRules as true,
       agreementPrivacy: value.agreementPrivacy as true,
-      invitationToken,
     };
   }
   function showFieldErrors(errors?: AppFieldErrors) {
@@ -444,25 +441,27 @@ export function RegistrationForm({
           </LoadingButton>
         </FieldGroup>
       </form>
-      <p className="text-center text-sm text-muted-foreground">
-        {setup ? 'Return to' : 'Already registered?'}{' '}
-        <Link
-          href="/"
-          className="font-medium text-primary underline-offset-4 hover:underline"
-          onClick={(event) => {
-            if (
-              pending ||
-              (dirty &&
-                !window.confirm(
-                  'Leave registration? Your unsaved details will be lost.',
-                ))
-            )
-              event.preventDefault();
-          }}
-        >
-          {setup ? 'setup welcome' : 'Sign in'}
-        </Link>
-      </p>
+      {!setup && (
+        <p className="text-center text-sm text-muted-foreground">
+          Already registered?{' '}
+          <Link
+            href="/"
+            className="font-medium text-primary underline-offset-4 hover:underline"
+            onClick={(event) => {
+              if (
+                pending ||
+                (dirty &&
+                  !window.confirm(
+                    'Leave registration? Your unsaved details will be lost.',
+                  ))
+              )
+                event.preventDefault();
+            }}
+          >
+            Sign in
+          </Link>
+        </p>
+      )}
     </div>
   );
 }

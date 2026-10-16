@@ -11,7 +11,8 @@
     "./registration": "./src/registration/index.ts",
     "./hackathon": "./src/hackathon/index.ts",
     "./setup": "./src/setup/index.ts",
-    "./categories": "./src/categories/index.ts"
+    "./categories": "./src/categories/index.ts",
+    "./judges": "./src/judges/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
@@ -19,6 +20,7 @@
   "dependencies": {
     "@critiq/constants": "workspace:*",
     "@critiq/db": "workspace:*",
+    "@critiq/mail": "workspace:*",
     "zod": "4.6.7"
   }
 }

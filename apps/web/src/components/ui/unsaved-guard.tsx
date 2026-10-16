@@ -27,8 +27,15 @@ type GuardContext = {
   register: (id: string, options: UnsavedGuardOptions) => void;
   unregister: (id: string) => void;
   confirmLeave: (options: UnsavedGuardOptions) => Promise<boolean>;
+  confirmNavigation: () => Promise<boolean>;
 };
 const UnsavedGuardContext = React.createContext<GuardContext | null>(null);
+
+export function useUnsavedGuardContext() {
+  const ctx = React.useContext(UnsavedGuardContext);
+  if (!ctx) throw new Error('Navigation guards require UnsavedGuardProvider.');
+  return ctx;
+}
 
 export function useUnsavedGuard(options: UnsavedGuardOptions): GuardNavigation {
   const ctx = React.useContext(UnsavedGuardContext);
@@ -156,9 +163,13 @@ export function UnsavedGuardProvider({
       document.removeEventListener('click', click, true);
     };
   }, [confirmLeave, onProceed]);
+  const confirmNavigation = React.useCallback(async () => {
+    const options = [...guards.current.values()].find((guard) => guard.when);
+    return options ? confirmLeave(options) : true;
+  }, [confirmLeave]);
   const value = React.useMemo(
-    () => ({ register, unregister, confirmLeave }),
-    [register, unregister, confirmLeave],
+    () => ({ register, unregister, confirmLeave, confirmNavigation }),
+    [register, unregister, confirmLeave, confirmNavigation],
   );
   return (
     <UnsavedGuardContext.Provider value={value}>

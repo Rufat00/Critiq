@@ -79,7 +79,9 @@ export async function beginSetupAction(
 ): Promise<ActionResult<null>> {
   try {
     const result = await beginSetup(await registrationContext(), { passcode });
-    (await cookies()).set('critiq-setup', result.token, cookieOptions);
+    const jar = await cookies();
+    jar.set('critiq-setup', result.token, cookieOptions);
+    jar.delete('critiq-invitation');
     return { ok: true, data: null };
   } catch (error) {
     return failure(error);
@@ -87,14 +89,19 @@ export async function beginSetupAction(
 }
 
 export async function requestRegistrationCodeAction(
-  input: RegisterAccountInput,
+  input: Omit<RegisterAccountInput, 'invitationToken'>,
 ): Promise<ActionResult<null>> {
   try {
     const ctx = await registrationContext();
-    await validateRegistrationInput(ctx, input);
+    const jar = await cookies();
+    const registrationInput = {
+      ...input,
+      invitationToken: jar.get('critiq-invitation')?.value,
+    };
+    await validateRegistrationInput(ctx, registrationInput);
     await getRegistrationAccess(ctx, {
-      setupToken: (await cookies()).get('critiq-setup')?.value,
-      invitationToken: input.invitationToken,
+      setupToken: jar.get('critiq-setup')?.value,
+      invitationToken: registrationInput.invitationToken,
       email: input.email.trim().toLowerCase(),
     });
     await requestRegistrationCode(input.email.trim().toLowerCase());
@@ -105,17 +112,21 @@ export async function requestRegistrationCodeAction(
 }
 
 export async function registerAccountAction(
-  input: RegisterAccountInput,
+  input: Omit<RegisterAccountInput, 'invitationToken'>,
   code?: string,
 ): Promise<ActionResult<{ destination: string }>> {
   try {
     const ctx = await registrationContext();
-    await validateRegistrationInput(ctx, input);
     const jar = await cookies();
+    const registrationInput = {
+      ...input,
+      invitationToken: jar.get('critiq-invitation')?.value,
+    };
+    await validateRegistrationInput(ctx, registrationInput);
     const email = input.email.trim().toLowerCase();
     await getRegistrationAccess(ctx, {
       setupToken: jar.get('critiq-setup')?.value,
-      invitationToken: input.invitationToken,
+      invitationToken: registrationInput.invitationToken,
       email,
     });
     let emailProofToken: string | undefined;
@@ -139,7 +150,7 @@ export async function registerAccountAction(
         },
       );
     }
-    const result = await registerAccount(ctx, input, {
+    const result = await registerAccount(ctx, registrationInput, {
       mode: authMode,
       passwordHash:
         authMode === 'password'
@@ -150,6 +161,7 @@ export async function registerAccountAction(
     });
     jar.delete('critiq-setup');
     jar.delete('critiq-registration-proof');
+    jar.delete('critiq-invitation');
     try {
       const signIn = await signInRegisteredAccount(
         result.email,

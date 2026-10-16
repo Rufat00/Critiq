@@ -52,10 +52,10 @@ Change `SMTP_PORT` or `MAILPIT_UI_PORT` if the host ports are already in use.
 
 ## Current scope
 
-Web includes email-first login at `/`, registration at `/register`, and one-time
-owner setup. `/admin` and `/judging` are protected placeholders; the owner’s
-post-registration destination `/setup` has a “Coming later” panel. Setup sections
-and judging workflows remain future work.
+Web includes email-first login at `/`, registration directly on invitation links
+at `/invite`, and one-time owner registration within the setup welcome flow.
+There is no standalone registration route. Owners configure the hackathon at
+`/setup`; organizers manage setup sections under `/admin`.
 
 Run `pnpm db:generate` after installation before type checking or importing
 `@critiq/db`. Read [packages/db/README.md](packages/db/README.md) for DB commands,
@@ -75,7 +75,7 @@ secret of at least 32 characters (generate one with `openssl rand -base64 32`).
 
 Set `SETUP_PASSCODE` to a unique value of at least 12 characters. On an unclaimed
 installation, `/` shows the setup welcome screen. A correct passcode grants
-20 minutes to register the owner. The database claim, account, and audit commit
+20 minutes to register the owner on the same page. The database claim, account, and audit commit
 atomically; removing the owner never reopens setup. The seed creates no users.
 
 Normal authentication uses six-digit email codes through `@critiq/mail`. Configure
@@ -90,10 +90,21 @@ Registration validates a full name of at least two words, email, a password of
 Email mode verifies ownership
 before creating the account and discards the password. Password mode stores only
 a Better Auth password hash. Registration requires a valid invitation after the owner has claimed setup. An
-invitation at `/register?token=...` can grant an admin role or judge categories.
+invitation at `/invite#token=...` can grant an admin role or judge categories.
 Invitation-bound email is locked in the UI and enforced by core. Invitation scope,
 expiry, use limits, and category ownership are checked in the registration
-transaction. Invitation creation and delivery UI will be developed later.
+transaction. The Judges section supports track-specific invitations, search,
+pagination, moving judges, and removing track access while in draft. Pending
+invitations can be revoked. Email invites are bound to the recipient and expire
+after 24 hours; unbound QR invitations expire after 20 minutes, allow up to 100
+judge registrations, and rotate the previous link for that track. Both store only a
+SHA-256 token hash. QR codes are rendered locally with `qrcode`; invitation
+tokens are never sent to an external QR service. Invitation URLs carry the token in a fragment; the landing
+page automatically validates it, clears it from browser history, transfers it to
+an HttpOnly cookie, and displays the registration form in place. Reloads resume
+using that cookie. The server reads the invitation from the cookie and revalidates
+it before sending a code and inside the account-creation transaction. Email delivery runs outside database transactions, and
+failed deliveries revoke their invitations. Use HTTPS for production APP_URL.
 
 Successful login routes owners/admins to `/admin` and judges to `/judging`.
 Registration signs in automatically and sends the first owner to `/setup`.
