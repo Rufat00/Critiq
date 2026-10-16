@@ -1,3 +1,5 @@
+import { judgingMethodLabels } from '@critiq/constants';
+import { AdminHeading } from '@/components/admin-heading';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -30,22 +32,22 @@ export default async function Page({
   const isReady = summary.status === 'READY';
   return (
     <>
-      <header className="flex flex-col gap-3">
-        <h1 className="max-w-3xl text-3xl leading-tight font-semibold tracking-tight sm:text-4xl">
-          {isDraft
+      <AdminHeading
+        title={
+          isDraft
             ? `Let’s prepare for ${summary.name ?? 'your hackathon'} Judging!`
             : isReady
               ? `${summary.name ?? 'Your hackathon'} is ready for judging`
-              : `${summary.name ?? 'Your hackathon'} · ${stageLabels[summary.status]}`}
-        </h1>
-        <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          {isDraft
+              : `${summary.name ?? 'Your hackathon'} · ${stageLabels[summary.status]}`
+        }
+        description={
+          isDraft
             ? 'Get the essentials in place, check your setup, and give your judges a smooth start.'
             : isReady
               ? 'Review your event summary below. Return to draft whenever you need to adjust your setup before judging starts.'
-              : 'Your event configuration is locked. Operational monitoring and results will be available as those workflows are implemented.'}
-        </p>
-      </header>
+              : 'Your event configuration is locked. Operational monitoring and results will be available as those workflows are implemented.'
+        }
+      />
       {!summary.name && (
         <SetupRequiredDialog isOwner={session?.isOwner() ?? false} />
       )}
@@ -87,7 +89,7 @@ export default async function Page({
                     <p className="text-muted-foreground">
                       {category.method === 'RUBRIC'
                         ? `Rubric · ${category.criteria} criteria`
-                        : 'Relative judging'}{' '}
+                        : judgingMethodLabels[category.method]}{' '}
                       · {category.minEvaluations} minimum
                       {category.targetEvaluations
                         ? ` / ${category.targetEvaluations} target`

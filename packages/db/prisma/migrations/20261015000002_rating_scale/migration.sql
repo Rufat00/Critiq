@@ -1,0 +1,1 @@
+ALTER TYPE "JudgingMethod" ADD VALUE 'RATING_SCALE';

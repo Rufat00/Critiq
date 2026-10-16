@@ -13,9 +13,21 @@ export const videos = {
   },
   categories: {
     ...placeholder,
-    title: 'Organize your judging categories',
+    title: 'Tracks & challenges guide',
     description:
-      'Learn how overall judging, tracks, and challenges fit together.',
+      'Learn how to organize tracks, set up challenges, and manage challenges across tracks.',
+  },
+  trackJudgingMethod: {
+    ...placeholder,
+    title: 'How to choose a track judging method',
+    description:
+      'Learn when to use Relational judging or a weighted rubric for your track.',
+  },
+  challengeJudgingMethod: {
+    ...placeholder,
+    title: 'How to choose a challenge judging method',
+    description:
+      'Learn when to use Rating Scale judging or a weighted rubric for your challenge.',
   },
   projects: {
     ...placeholder,

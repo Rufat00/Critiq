@@ -1,3 +1,4 @@
+import { AdminHeading } from '@/components/admin-heading';
 import Link from 'next/link';
 import { RiArrowLeftLine, RiSettings3Line } from '@remixicon/react';
 import type { SetupSection } from '@critiq/core/hackathon';
@@ -16,17 +17,17 @@ export async function SetupSectionPage({
   const section = summary.sections.find((item) => item.id === sectionId)!;
   return (
     <>
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-3xl font-semibold tracking-tight">
-          {sectionId === 'event' ? 'Settings' : section.title}
-        </h1>
-        <Button asChild variant="secondary" size="sm">
-          <Link href="/admin">
-            <RiArrowLeftLine data-icon="inline-start" />
-            Back to home
-          </Link>
-        </Button>
-      </header>
+      <AdminHeading
+        title={sectionId === 'event' ? 'Settings' : section.title}
+        actions={
+          <Button asChild variant="secondary" size="sm">
+            <Link href="/admin">
+              <RiArrowLeftLine data-icon="inline-start" />
+              Back to home
+            </Link>
+          </Button>
+        }
+      />
       {sectionId === 'event' ? (
         <Card>
           <CardHeader>
@@ -45,39 +46,8 @@ export async function SetupSectionPage({
         <SummaryPanel
           title={section.title}
           metric={section.count}
-          subtitle={
-            sectionId === 'categories'
-              ? 'Tracks and challenges · Overall is included by default'
-              : 'Currently configured'
-          }
+          subtitle="Currently configured"
         />
-      )}
-      {sectionId === 'categories' && summary.categories.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Configured categories</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="flex flex-col gap-3">
-              {summary.categories.map((category) => (
-                <li
-                  key={category.id}
-                  className="flex flex-wrap justify-between gap-2 text-sm"
-                >
-                  <span>
-                    {category.name}
-                    {category.kind === 'OVERALL' ? ' (default)' : ''}
-                  </span>
-                  <span className="text-muted-foreground">
-                    {category.method === 'RUBRIC'
-                      ? 'Rubric'
-                      : 'Relative judging'}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
       )}
       <EmptyState
         icon={<RiSettings3Line />}

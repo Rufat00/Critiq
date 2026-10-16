@@ -1,6 +1,6 @@
 # Critiq data model — first implementation draft
 
-`schema.prisma` is designed for PostgreSQL, Prisma and Better Auth (standard Prisma adapter). The shared `JudgingCategory` models independent competitions. Overall is created automatically as a category of kind `OVERALL`, not as a specialized `Track` row. Every project can be judged in Overall, but projects in tracks with `disqualifiesFromOverall=true` cannot win Overall. Challenges are independent judging categories and use opt-in membership, restricted by eligible tracks.
+`schema.prisma` is designed for PostgreSQL, Prisma and Better Auth (standard Prisma adapter). The shared `JudgingCategory` models independent competitions. Overall is created automatically as a category of kind `OVERALL`, not as a specialized `Track` row. Only projects without a specialized track participate in Overall judging and awards. Specialized tracks always have `disqualifiesFromOverall=true`; inclusion in Overall is not supported. Challenges are independent judging categories and use opt-in membership, restricted by explicit eligible tracks. `Challenge.includesOverall` selects Overall independently and defaults to true; `ChallengeTrack` selects specialized tracks. No future tracks are included automatically.
 
 ## Important application/database invariants
 
@@ -9,7 +9,7 @@
 - Category `kind` must match subtype: TRACK has one Track row; CHALLENGE has one Challenge row; OVERALL has neither.
 - Track, project, challenge and room must all belong to the same hackathon; cross-table multi-hop invariants require service validation or composite foreign keys.
 - TrackRoomTableRange bounds must be nonnegative and `fromNumber <= toNumber`; validate no overlap across different tracks sharing the same room when necessary.
-- Overall eligibility is separate from Overall evaluation eligibility: filter winners based on `Project.track.disqualifiesFromOverall`, while preserving Overall evaluations.
+- Overall judging and award eligibility require `Project.trackId=null`. Specialized tracks are excluded; SQL enforces `Track.disqualifiesFromOverall=true`.
 - Challenge eligibility and `ProjectChallenge` opt-in must be checked when selecting projects.
 - `scoreScale` is 5 or 10; criterion scores are within [0, scoreScale]; weights nonnegative; freeze rubric definitions after judging starts.
 - Ranking positions are 1-based and unique for each (category, judge); reorder with a transaction (temporary positions or deferrable uniqueness).
@@ -30,6 +30,7 @@ The stock Better Auth Prisma schema has a required `email`. The username plugin 
 ## Operational schema choices
 
 - `JudgeCategory` makes category assignments independent; a judge can judge multiple categories.
+- Tracks and Overall allow Relational (`RELATIVE`, default) or Rubric. Challenges allow Rating Scale (`RATING_SCALE`, default) or Rubric; category-method SQL constraints enforce this distinction.
 - `RelativeRanking` retains each judge's ordered list per category; pairwise Copeland aggregation is derived from these ranks.
 - `EvaluationScore` stores original rubric criterion scores; `rubricTotal` is only a cache.
 - `ProjectFlag` can cover absences and conflicts; `JudgeConflict` explicitly blocks assignments.

@@ -45,7 +45,7 @@ test('rubric criteria and actual assigned judge accounts are required', () => {
   assert.equal(summary.sections.find((s) => s.id === 'judges')!.done, false);
 });
 
-test('visibility does not disable a category and overall scoring includes specialized-track projects', () => {
+test('visibility does not disable a category and Overall excludes specialized-track projects', () => {
   const data = snapshot();
   data.hackathon.categories[0]!.isVisible = false;
   data.hackathon.projects[0]!.trackId = 'track';
@@ -56,6 +56,20 @@ test('visibility does not disable a category and overall scoring includes specia
     kind: 'TRACK',
     track: { id: 'track', disqualifiesFromOverall: true },
   } as SetupSnapshot['hackathon']['categories'][number]);
+  data.hackathon.categories[0]!.method = 'RUBRIC';
+  assert.equal(buildSetupSummary(data).blockers.length, 0);
+  data.hackathon.projects.push({
+    ...data.hackathon.projects[0]!,
+    id: 'overall-project',
+    name: 'Overall project',
+    trackId: null,
+  });
+  assert.ok(
+    buildSetupSummary(data).blockers.some((s) =>
+      s.startsWith('Overall: add at least one rubric criterion'),
+    ),
+  );
+  data.hackathon.categories[0]!.method = 'RELATIVE';
   assert.equal(buildSetupSummary(data).blockers.length, 0);
   data.hackathon.categories[1]!.method = 'RUBRIC';
   assert.ok(
@@ -87,6 +101,7 @@ test('rooms and custom categories can complete all five checklist steps', () => 
     id: 'challenge',
     name: 'Challenge',
     kind: 'CHALLENGE',
+    method: 'RATING_SCALE',
     isEnabled: false,
   });
   const summary = buildSetupSummary(data);
@@ -119,4 +134,92 @@ test('event creation is automatically done when named and does not depend on man
     data.hackathon.name = name;
     assert.equal(event().done, false);
   }
+});
+
+test('category methods respect track and challenge compatibility', () => {
+  const data = snapshot();
+  data.hackathon.categories[0]!.method = 'RATING_SCALE';
+  assert.ok(
+    buildSetupSummary(data).blockers.some((s) => s.includes('supported')),
+  );
+  data.hackathon.categories[0]!.method = 'RELATIVE';
+  data.hackathon.categories.push({
+    ...data.hackathon.categories[0]!,
+    id: 'challenge',
+    name: 'Challenge',
+    kind: 'CHALLENGE',
+    method: 'RELATIVE',
+  });
+  assert.ok(
+    buildSetupSummary(data).blockers.some((s) => s.includes('supported')),
+  );
+  data.hackathon.categories[1]!.method = 'RATING_SCALE';
+  assert.ok(
+    !buildSetupSummary(data).blockers.some(
+      (s) => s.includes('supported') || s.includes('criterion'),
+    ),
+  );
+  data.hackathon.categories[1]!.method = 'RUBRIC';
+  assert.ok(
+    buildSetupSummary(data).blockers.some((s) => s.includes('criterion')),
+  );
+});
+
+test('challenge eligibility honors includesOverall and rejects unlinked restricted tracks', () => {
+  const data = snapshot();
+  const challenge = {
+    ...data.hackathon.categories[0]!,
+    id: 'challenge-category',
+    name: 'Challenge',
+    kind: 'CHALLENGE',
+    method: 'RATING_SCALE',
+    challenge: {
+      id: 'challenge',
+      includesOverall: true,
+      allowedTracks: [{ trackId: 'other-track' }],
+    },
+  } as SetupSnapshot['hackathon']['categories'][number];
+  data.hackathon.categories.push(challenge);
+  data.hackathon.projects[0]!.challenges = [
+    { challengeId: 'challenge' },
+  ] as SetupSnapshot['hackathon']['projects'][number]['challenges'];
+  assert.ok(
+    !buildSetupSummary(data).blockers.some((s) => s.includes('not eligible')),
+  );
+  challenge.challenge!.includesOverall = false;
+  assert.ok(
+    buildSetupSummary(data).blockers.some((s) => s.includes('not eligible')),
+  );
+  challenge.challenge!.allowedTracks = [];
+  assert.ok(
+    buildSetupSummary(data).blockers.some((s) => s.includes('not eligible')),
+  );
+});
+
+test('including Overall never grants challenge eligibility to unselected specialized tracks', () => {
+  const data = snapshot();
+  const challenge = {
+    ...data.hackathon.categories[0]!,
+    id: 'challenge-category',
+    name: 'Challenge',
+    kind: 'CHALLENGE',
+    method: 'RATING_SCALE',
+    challenge: {
+      id: 'challenge',
+      includesOverall: true,
+      allowedTracks: [{ trackId: 'chosen-track' }],
+    },
+  } as SetupSnapshot['hackathon']['categories'][number];
+  data.hackathon.categories.push(challenge);
+  data.hackathon.projects[0]!.trackId = 'new-track';
+  data.hackathon.projects[0]!.challenges = [
+    { challengeId: 'challenge' },
+  ] as SetupSnapshot['hackathon']['projects'][number]['challenges'];
+  assert.ok(
+    buildSetupSummary(data).blockers.some((s) => s.includes('not eligible')),
+  );
+  data.hackathon.projects[0]!.trackId = 'chosen-track';
+  assert.ok(
+    !buildSetupSummary(data).blockers.some((s) => s.includes('not eligible')),
+  );
 });

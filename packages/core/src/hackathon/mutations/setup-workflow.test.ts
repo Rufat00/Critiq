@@ -127,6 +127,7 @@ function completeChecklist(db: ReturnType<typeof database>) {
     id: 'challenge',
     name: 'Optional challenge',
     kind: 'CHALLENGE',
+    method: 'RATING_SCALE',
     isEnabled: false,
   });
   data.hackathon.setupCompletions = buildSetupSummary(data)

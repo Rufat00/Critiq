@@ -71,7 +71,7 @@ unique constraints. A subsequent migration enforces:
 - Valid invitation maximum/use counts.
 
 Constraints enforce _at most one_ singleton; provisioning creates the required
-records. They do not guarantee these records cannot subsequently be deleted.
+records. The Overall category is protected against deletion and conversion by database triggers.
 
 Core must still enforce the supplied cross-record rules: category/subtype
 agreement, common hackathon ownership, eligibility and conflicts, current-room
@@ -118,3 +118,41 @@ hackathon lock and enforce Draft status before changing competition setup.
 Checklist setup links open dedicated pages; there is no checklist setup drawer.
 The destination pages show saved configuration; entity editors/imports and the
 live judging/results workflows remain separate work.
+
+## Category configuration
+
+The admin categories page lists Overall as the default, protected track without
+creating a specialized `Track` row. Optional descriptions live on
+`JudgingCategory`. Specialized tracks allow Relational (`RELATIVE`, the default)
+or Rubric judging. Challenges allow Rating Scale (`RATING_SCALE`, the default)
+or Rubric judging. Database checks enforce these method combinations; an insert
+trigger supplies the method when omitted, based on category kind. Prisma uses a
+database-generated default because the choice depends on `kind`.
+
+Apply both category-method migrations before using the page. Existing challenge
+rows must already use a supported method before the compatibility constraint can
+be applied; disposable development data may be reset explicitly by its owner.
+Rating Scale uses the hackathon's configured 5- or 10-point scale; score entry
+and result calculation remain future workflows.
+
+The matrix shows challenge eligibility across tracks, using explicit `ChallengeTrack` links and
+`Challenge.includesOverall`. Overall is selected independently;
+challenge judging remains independent of track awards. Project counts show all
+registered projects or challenge entries, including inactive entries. Overall counts only projects without a specialized track.
+
+Category deletion requires an organizer, Draft status, no judging activity, and
+an audit committed in the same transaction. It keeps projects and removes the
+category's dependent configuration. Create controls open guarded forms; edit remains a placeholder. New rubric categories require named criteria with weights in 10% increments totaling exactly 100%. Each added item starts at 20%. Category, subtype, rubric criteria, and audit save in one transaction. The staged creation form selects Overall by default for challenges. Specialized tracks are selected individually. New tracks select existing challenges explicitly; future tracks never inherit challenges automatically. Related IDs are checked against the current hackathon, and membership links save with the category and audit.
+
+Specialized tracks are always excluded from Overall judging and awards. The
+track exclusion migration sets `disqualifiesFromOverall` to true on existing
+tracks, changes its default to true, and rejects false values on inserts and
+updates. Overall eligibility requires `Project.trackId` to be null; allowing
+specialized tracks into Overall is not currently supported.
+
+The category action menus expose nested checkbox menus for challenge/track
+membership, including Overall. Changes save immediately in Draft, serialize on
+the hackathon lock, and commit with a before/after audit. Removing a membership
+with existing project challenge entries is rejected so those entries remain
+eligible. Repeating a request does not duplicate membership rows. Both lists and
+the matrix reflect the saved membership after revalidation.

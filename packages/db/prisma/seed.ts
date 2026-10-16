@@ -25,6 +25,8 @@ try {
           hackathonId: hackathon.id,
           kind: CategoryKind.OVERALL,
           name: 'Overall',
+          description: 'Judging for projects without a specialized track.',
+          method: 'RELATIVE',
         },
       });
     }

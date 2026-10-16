@@ -10,7 +10,8 @@
     "./operations": "./src/shared/operations/index.ts",
     "./registration": "./src/registration/index.ts",
     "./hackathon": "./src/hackathon/index.ts",
-    "./setup": "./src/setup/index.ts"
+    "./setup": "./src/setup/index.ts",
+    "./categories": "./src/categories/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

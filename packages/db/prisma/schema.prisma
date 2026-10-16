@@ -38,6 +38,7 @@ enum CategoryKind {
 enum JudgingMethod {
   RELATIVE
   RUBRIC
+  RATING_SCALE
 }
 
 enum CategoryStatus {
@@ -184,7 +185,8 @@ model JudgingCategory {
   kind              CategoryKind
   name              String
   description       String?
-  method            JudgingMethod  @default(RELATIVE)
+  // The insert trigger chooses RELATIVE for tracks/Overall and RATING_SCALE for challenges.
+  method            JudgingMethod  @default(dbgenerated())
   status            CategoryStatus @default(NOT_STARTED)
   timerSeconds      Int            @default(300)
   minEvaluations    Int            @default(4)
@@ -218,7 +220,8 @@ model Track {
   hackathonId             String
   categoryId              String   @unique
   // Only specialized tracks have Track rows. Overall is a JudgingCategory alone.
-  disqualifiesFromOverall Boolean  @default(false)
+  // Specialized tracks are always excluded from Overall. Enforced by SQL.
+  disqualifiesFromOverall Boolean  @default(true)
   // Percentage of eligible room projects completed before rotation.
   roomSwitchPercent       Int      @default(25)
   createdAt               DateTime @default(now())
@@ -237,8 +240,8 @@ model Challenge {
   id          String   @id @default(cuid())
   hackathonId String
   categoryId  String   @unique
-  // If true, eligible projects from any specialized track can opt in.
-  allTracks   Boolean  @default(true)
+  // Overall is separate from specialized tracks and is selected explicitly.
+  includesOverall Boolean @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

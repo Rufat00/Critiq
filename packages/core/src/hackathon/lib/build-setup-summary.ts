@@ -19,14 +19,23 @@ export function buildSetupSummary({ hackathon: h, judges }: SetupSnapshot) {
     blockers.push('Choose a score scale of 5 or 10.');
 
   for (const category of enabledCategories) {
+    if (
+      (category.kind === 'CHALLENGE' && category.method === 'RELATIVE') ||
+      (category.kind !== 'CHALLENGE' && category.method === 'RATING_SCALE')
+    )
+      blockers.push(
+        `${category.name}: choose a judging method supported by this category.`,
+      );
     const eligible = projects.filter((p) => {
       if (category.kind === 'TRACK') return category.track?.id === p.trackId;
       if (category.kind === 'CHALLENGE')
         return p.challenges.some(
           (entry) => entry.challengeId === category.challenge?.id,
         );
-      return true; // Winner eligibility is separate from Overall evaluation eligibility.
+      return p.trackId === null; // Specialized-track projects do not enter Overall.
     });
+    // Overall has no judging work when every project belongs to a specialized track.
+    if (category.kind === 'OVERALL' && !eligible.length) continue;
     const assigned = activeJudges.filter((j) =>
       category.judges.some((m) => m.userId === j.id && m.isActive),
     );
@@ -74,8 +83,11 @@ export function buildSetupSummary({ hackathon: h, judges }: SetupSnapshot) {
           `${p.name}: challenge does not belong to this hackathon.`,
         );
       else if (
-        category.challenge.allowedTracks.length &&
-        !category.challenge.allowedTracks.some((t) => t.trackId === p.trackId)
+        p.trackId === null
+          ? !category.challenge.includesOverall
+          : !category.challenge.allowedTracks.some(
+              (t) => t.trackId === p.trackId,
+            )
       )
         blockers.push(`${p.name}: track is not eligible for ${category.name}.`);
     }
