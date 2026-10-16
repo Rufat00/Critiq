@@ -134,6 +134,8 @@ function Sidebar({
         className={cn(
           'fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) md:flex',
           side === 'left' ? 'left-0' : 'right-0',
+          variant === 'sidebar' && 'border-sidebar-border',
+          variant === 'sidebar' && (side === 'left' ? 'border-r' : 'border-l'),
           (variant === 'floating' || variant === 'inset') && 'p-2',
           className,
         )}

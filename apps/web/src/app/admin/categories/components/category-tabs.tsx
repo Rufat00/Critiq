@@ -12,7 +12,6 @@ import type { JudgingCategories } from '@critiq/core/categories';
 import { judgingMethodLabels } from '@critiq/constants';
 import { toast } from '@/components/ui/sonner';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   Table,
@@ -60,10 +59,12 @@ export function CategoryTabs({
           </TabsTrigger>
         </TabsList>
         <TabsContent value="tracks">
-          <Card>
-            <CardHeader>
+          <section className="flex flex-col gap-5">
+            <header className="flex flex-col gap-2">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <CardTitle>Tracks</CardTitle>
+                <h2 className="text-base font-semibold leading-snug tracking-tight">
+                  Tracks
+                </h2>
                 <CategoryFormDialog
                   categories={categories}
                   kind="track"
@@ -71,8 +72,8 @@ export function CategoryTabs({
                   onSaved={toast.success}
                 />
               </div>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
+            </header>
+            <div className="flex flex-col gap-3">
               <div
                 aria-hidden="true"
                 className="hidden grid-cols-[minmax(0,1fr)_100px_150px_70px_44px] items-center gap-4 px-4 pb-1 text-xs text-muted-foreground xl:grid"
@@ -95,9 +96,9 @@ export function CategoryTabs({
                   >
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="break-words text-sm font-semibold">
+                        <h3 className="break-words text-sm font-semibold">
                           {track.name}
-                        </h2>
+                        </h3>
                         {track.isOverall && (
                           <Badge>
                             <RiLockLine className="size-3" />
@@ -162,14 +163,16 @@ export function CategoryTabs({
                   description="Tracks will appear here once they are configured. Run the setup seed to create Overall."
                 />
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </section>
         </TabsContent>
         <TabsContent value="challenges">
-          <Card>
-            <CardHeader>
+          <section className="flex flex-col gap-5">
+            <header className="flex flex-col gap-2">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <CardTitle>Challenges</CardTitle>
+                <h2 className="text-base font-semibold leading-snug tracking-tight">
+                  Challenges
+                </h2>
                 <CategoryFormDialog
                   categories={categories}
                   kind="challenge"
@@ -177,8 +180,8 @@ export function CategoryTabs({
                   onSaved={toast.success}
                 />
               </div>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
+            </header>
+            <div className="flex flex-col gap-3">
               <div
                 aria-hidden="true"
                 className="hidden grid-cols-[minmax(0,1fr)_100px_150px_70px_44px] items-center gap-4 px-4 pb-1 text-xs text-muted-foreground xl:grid"
@@ -196,9 +199,9 @@ export function CategoryTabs({
                   className="grid min-w-0 grid-cols-[minmax(0,1fr)_44px] items-center gap-4 rounded-xl border border-border p-4 xl:grid-cols-[minmax(0,1fr)_100px_150px_70px_44px]"
                 >
                   <div className="min-w-0">
-                    <h2 className="break-words text-sm font-semibold">
+                    <h3 className="break-words text-sm font-semibold">
                       {challenge.name}
-                    </h2>
+                    </h3>
                     {challenge.description && (
                       <p className="mt-1 break-words text-sm text-muted-foreground">
                         {challenge.description}
@@ -256,14 +259,16 @@ export function CategoryTabs({
                   description="Challenges give projects more ways to stand out. Each challenge will appear here with its tracks and judging method."
                 />
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </section>
         </TabsContent>
         <TabsContent value="matrix">
-          <Card>
-            <CardHeader>
+          <section className="flex flex-col gap-5">
+            <header className="flex flex-col gap-2">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <CardTitle>Challenge matrix</CardTitle>
+                <h2 className="text-base font-semibold leading-snug tracking-tight">
+                  Challenge matrix
+                </h2>
                 <CategoryFormDialog
                   categories={categories}
                   kind="challenge"
@@ -281,8 +286,8 @@ export function CategoryTabs({
                   Not included
                 </span>
               </div>
-            </CardHeader>
-            <CardContent>
+            </header>
+            <div>
               {challenges.length ? (
                 <div
                   tabIndex={0}
@@ -351,8 +356,8 @@ export function CategoryTabs({
                   description="The matrix will show challenge membership across all tracks once challenges are configured."
                 />
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </section>
         </TabsContent>
       </Tabs>
     </div>

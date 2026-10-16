@@ -21,11 +21,11 @@ export function AdminFrame({
   return (
     <UnsavedGuardProvider>
       <SidebarProvider
-        style={{ '--sidebar-width': '13.2rem' } as CSSProperties}
+        style={{ '--sidebar-width': '14.5rem' } as CSSProperties}
       >
         {navigation}
         <SidebarInset className="min-w-0">
-          <div className="mx-auto flex w-full max-w-7xl flex-col gap-9 px-5 py-8 md:px-10 md:py-12">
+          <div className="mx-auto flex w-full max-w-7xl flex-col gap-9 px-4 py-6 md:px-8 md:py-10">
             {children}
           </div>
           {loading ? (

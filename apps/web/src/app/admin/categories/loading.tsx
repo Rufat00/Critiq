@@ -1,4 +1,3 @@
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CategoryPageLayout } from './components/category-page-layout';
@@ -18,14 +17,16 @@ export default function Loading() {
               </div>
             ))}
           </div>
-          <Card>
-            <CardHeader>
+          <section className="flex flex-col gap-5">
+            <header className="flex flex-col gap-2">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <CardTitle>Tracks</CardTitle>
+                <h2 className="text-base font-semibold leading-snug tracking-tight">
+                  Tracks
+                </h2>
                 <Skeleton className="h-8 w-28 rounded-lg" />
               </div>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
+            </header>
+            <div className="flex flex-col gap-3">
               <div className="hidden grid-cols-[minmax(0,1fr)_100px_150px_70px_44px] items-center gap-4 px-4 pb-1 text-xs text-muted-foreground xl:grid">
                 <span>Track</span>
                 <span>Method</span>
@@ -57,8 +58,8 @@ export default function Loading() {
                   </div>
                 </div>
               ))}
-            </CardContent>
-          </Card>
+            </div>
+          </section>
         </div>
       </div>
     </CategoryPageLayout>
