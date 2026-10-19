@@ -35,6 +35,18 @@ export const videos = {
     description:
       'Get project entries and presentation locations ready for your judges.',
   },
+  devpostImport: {
+    ...placeholder,
+    title: 'How to import from Devpost',
+    description:
+      'Export your Devpost projects report and import submitted projects into Critiq.',
+  },
+  csvImport: {
+    ...placeholder,
+    title: 'How to import a project CSV',
+    description:
+      'Prepare the eight project fields and review your import before saving.',
+  },
   judges: {
     ...placeholder,
     title: 'Prepare your judges',

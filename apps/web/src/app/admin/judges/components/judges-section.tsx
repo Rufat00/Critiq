@@ -20,7 +20,7 @@ export function JudgesSection({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const guard = useUnsavedGuardContext();
-  function navigate(changes: Record<string, string>) {
+  function navigate(changes: Record<string, string>, replace = false) {
     startTransition(async () => {
       const params = new URLSearchParams({
         track: data.categoryId ?? '',
@@ -33,7 +33,9 @@ export function JudgesSection({
         size: String(data.judges?.pagination.pageSize ?? 25),
         ...changes,
       });
-      router.push(`/admin/judges?${params}`);
+      const href = `/admin/judges?${params}`;
+      if (replace) router.replace(href, { scroll: false });
+      else router.push(href);
     });
   }
   // Each track's invite form remains mounted while searching/paging its table.

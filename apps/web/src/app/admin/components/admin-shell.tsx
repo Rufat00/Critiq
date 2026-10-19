@@ -78,7 +78,7 @@ function AdminNavigation({
           {summary.name ?? 'Your hackathon'}
         </p>
       </SidebarHeader>
-      <SidebarContent className="gap-0">
+      <SidebarContent className="gap-1">
         <SidebarGroup>
           <SidebarMenu>
             {navigation.main.map((label) => {

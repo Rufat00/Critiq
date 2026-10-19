@@ -36,15 +36,9 @@ export default function Loading() {
             ))}
           </div>
           <section className="flex min-w-0 flex-col gap-5">
-            <div className="grid items-end gap-4 md:grid-cols-[auto_minmax(0,1fr)]">
-              <div className="flex items-center gap-6 border-b border-border pt-2 pb-3">
-                <Skeleton className="h-5 w-12" />
-                <div className="flex items-center gap-1.5">
-                  <Skeleton className="h-5 w-32" />
-                  <Skeleton className="h-5 w-6 rounded-full" />
-                </div>
-              </div>
-              <Skeleton className="h-11 w-full rounded-lg" />
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <Skeleton className="h-13 w-72 max-w-full rounded-full md:h-11" />
+              <Skeleton className="h-11 w-full rounded-lg lg:w-80 lg:shrink-0" />
             </div>
             <div className="hidden md:block">
               <Table>

@@ -12,7 +12,8 @@
     "./hackathon": "./src/hackathon/index.ts",
     "./setup": "./src/setup/index.ts",
     "./categories": "./src/categories/index.ts",
-    "./judges": "./src/judges/index.ts"
+    "./judges": "./src/judges/index.ts",
+    "./projects": "./src/projects/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

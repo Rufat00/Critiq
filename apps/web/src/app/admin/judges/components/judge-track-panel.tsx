@@ -5,7 +5,7 @@ import type { JudgesPageData } from '../queries';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { InviteControls } from './invite-controls';
-import { JudgeSearch } from './judge-search';
+import { SearchForm } from '@/components/search-form';
 import { JudgeList } from './judge-list';
 import { JudgeInvitations } from './judge-invitations';
 import { JudgePagination } from './judge-pagination';
@@ -21,7 +21,7 @@ export function JudgeTrackPanel({
   data: JudgesPageData;
   emailEnabled: boolean;
   pending: boolean;
-  onNavigate: (changes: Record<string, string>) => void;
+  onNavigate: (changes: Record<string, string>, replace?: boolean) => void;
 }) {
   const { judges, invitations } = data;
   return (
@@ -38,13 +38,13 @@ export function JudgeTrackPanel({
           aria-label={`${track.name} judges`}
           aria-busy={pending}
         >
-          <div className="grid items-end gap-4 md:grid-cols-[auto_minmax(0,1fr)]">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <Tabs
-              className="min-w-0"
+              className="min-w-0 lg:shrink-0"
               value={data.view}
               onValueChange={(view) => onNavigate({ view, page: '1' })}
             >
-              <TabsList aria-label="Judge records">
+              <TabsList variant="default" aria-label="Judge records">
                 <TabsTrigger value="judges" disabled={pending}>
                   Judges
                 </TabsTrigger>
@@ -54,18 +54,17 @@ export function JudgeTrackPanel({
                 </TabsTrigger>
               </TabsList>
             </Tabs>
-            <JudgeSearch
-              key={`${track.id}:${data.search}`}
+            <SearchForm
+              id="judge-search"
+              label="Search judges and invitations"
+              placeholder="Search name or email"
+              className="lg:w-80 lg:shrink-0"
+              key={track.id}
               initialSearch={data.search}
-              disabled={pending}
-              onSearch={(search) => onNavigate({ search, page: '1' })}
+              pending={pending}
+              onSearch={(search) => onNavigate({ search, page: '1' }, true)}
             />
           </div>
-          {pending && (
-            <p role="status" className="text-sm text-muted-foreground">
-              Updating judges…
-            </p>
-          )}
           {data.view === 'judges' ? (
             <JudgeList
               judges={judges}
