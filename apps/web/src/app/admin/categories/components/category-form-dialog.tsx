@@ -100,9 +100,7 @@ export function CategoryFormDialog({
   const id = useId();
   const router = useRouter();
   const defaultMethod: Method = kind === 'track' ? 'RELATIVE' : 'RATING_SCALE';
-  const trackOptions = categories.tracks.filter(
-    (track) => track.trackId !== null,
-  );
+  const trackOptions = categories.tracks;
   const challengeOptions = categories.challenges.filter(
     (challenge) => challenge.challengeId !== null,
   );
@@ -114,12 +112,11 @@ export function CategoryFormDialog({
       description: category?.description ?? '',
       method: (category?.method ?? defaultMethod) as Method,
       criteria: (category?.criteria ?? []) as RubricDraft[],
-      includesOverall: challenge?.includesOverall ?? true,
       trackIds: categories.tracks
-        .filter(
-          (track) => track.trackId && challenge?.trackIds.includes(track.id),
+        .filter((track) =>
+          challenge ? challenge.trackIds.includes(track.id) : track.isOverall,
         )
-        .map((track) => track.trackId!),
+        .map((track) => track.trackId),
       challengeIds: categories.challenges
         .filter(
           (item) =>
@@ -146,7 +143,6 @@ export function CategoryFormDialog({
                   weight: item.weight,
                 }))
               : [],
-          includesOverall: kind === 'challenge' ? value.includesOverall : true,
           trackIds: kind === 'challenge' ? value.trackIds : [],
           challengeIds: kind === 'track' ? value.challengeIds : [],
         };
@@ -211,8 +207,7 @@ export function CategoryFormDialog({
           item.name.trim().length <= 100 &&
           (rubricWeightOptions as readonly number[]).includes(item.weight),
       ));
-  const validMembership =
-    kind === 'track' || values.includesOverall || values.trackIds.length > 0;
+  const validMembership = kind === 'track' || values.trackIds.length > 0;
   const isLastScreen =
     screen === 'membership' || (screen === 'method' && !hasMembershipScreen);
   const canContinue =
@@ -669,24 +664,6 @@ export function CategoryFormDialog({
                     {kind === 'challenge' ? (
                       <>
                         <FieldGroup className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                          <form.Field name="includesOverall">
-                            {(field) => (
-                              <CategorySelectionPill
-                                id={`${id}-overall`}
-                                name={
-                                  categories.tracks.find(
-                                    (track) => track.isOverall,
-                                  )?.name ?? 'Overall'
-                                }
-                                checked={field.state.value}
-                                disabled={pending}
-                                onCheckedChange={(checked) => {
-                                  field.handleChange(checked);
-                                  clearErrors();
-                                }}
-                              />
-                            )}
-                          </form.Field>
                           <form.Field name="trackIds">
                             {(field) => (
                               <>

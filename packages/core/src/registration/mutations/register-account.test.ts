@@ -30,9 +30,17 @@ function database({
   claimed = true,
   invitation = null,
   failAudit = false,
-}: { claimed?: boolean; invitation?: any; failAudit?: boolean } = {}) {
+  missingHackathon = false,
+}: {
+  claimed?: boolean;
+  invitation?: any;
+  failAudit?: boolean;
+  missingHackathon?: boolean;
+} = {}) {
   let state = {
     installation: { id: 1, claimedAt: claimed ? new Date() : null },
+    hackathon: missingHackathon ? null : { id: 'hackathon' },
+    createdHackathons: [] as any[],
     users: [] as any[],
     audits: [] as any[],
     redemptions: [] as any[],
@@ -65,7 +73,7 @@ function database({
             item.expiresAt > where.expiresAt.gt,
         ),
     },
-    hackathon: { findFirst: async () => ({ id: 'hackathon' }) },
+    hackathon: { findFirst: async () => state.hackathon },
     invitation: {
       findUnique: async ({ where }: any) =>
         state.invitation?.tokenHash === where.tokenHash
@@ -113,7 +121,14 @@ function database({
             );
           },
         },
-        hackathon: { findFirst: async () => ({ id: 'hackathon' }) },
+        hackathon: {
+          findFirst: async () => draft.hackathon,
+          create: async ({ data }: any) => {
+            draft.hackathon = data;
+            draft.createdHackathons.push(data);
+            return data;
+          },
+        },
         invitation: {
           findUnique: async ({ where }: any) =>
             draft.invitation?.tokenHash === where.tokenHash
@@ -592,4 +607,17 @@ test('opening a valid invitation does not bypass later revocation, expiry, or ex
     assert.equal(db.read().users.length, 0);
     assert.equal(db.read().redemptions.length, 0);
   }
+});
+
+test('fresh owner bootstrap creates Overall with its own explicit Track in the same hackathon', async () => {
+  const db = database({ claimed: false, missingHackathon: true });
+  await registerAccount(db.ctx, input, {
+    ...passwordCredentials,
+    setupToken: 'setup-token',
+  });
+  const created = db.read().createdHackathons[0];
+  assert.ok(created.id);
+  assert.equal(created.categories.create.kind, 'OVERALL');
+  assert.equal(created.categories.create.track.create.hackathonId, created.id);
+  assert.equal(db.read().createdHackathons.length, 1);
 });

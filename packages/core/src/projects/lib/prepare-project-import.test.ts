@@ -12,7 +12,12 @@ const ctx = {
   db: {
     judgingCategory: {
       findMany: async () => [
-        { kind: 'OVERALL', name: 'Overall', track: null, challenge: null },
+        {
+          kind: 'OVERALL',
+          name: 'Overall',
+          track: { id: 'overall-track' },
+          challenge: null,
+        },
         {
           kind: 'TRACK',
           name: 'Beginner track',
@@ -23,7 +28,10 @@ const ctx = {
           kind: 'CHALLENGE',
           name: 'Best API',
           track: null,
-          challenge: { id: 'api', includesOverall: true, allowedTracks: [] },
+          challenge: {
+            id: 'api',
+            allowedTracks: [{ trackId: 'overall-track' }],
+          },
         },
         {
           kind: 'CHALLENGE',
@@ -31,7 +39,6 @@ const ctx = {
           track: null,
           challenge: {
             id: 'restricted',
-            includesOverall: false,
             allowedTracks: [{ trackId: 'beginner' }],
           },
         },
@@ -49,6 +56,7 @@ test('Devpost ignores extra prizes and track names while retaining matched chall
     csv: devpost('Extra sponsor prize, BEST API, Beginner track, Best API'),
   });
   assert.equal(result.projects.length, 1);
+  assert.equal(result.projects[0]!.trackId, 'overall-track');
   assert.deepEqual(result.projects[0]!.challengeIds, ['api']);
 });
 
@@ -58,6 +66,7 @@ test('Devpost imports projects when none of their opt-in prizes exist in Critiq'
     csv: devpost('Extra prize, Another prize'),
   });
   assert.equal(result.projects.length, 1);
+  assert.equal(result.projects[0]!.trackId, 'overall-track');
   assert.deepEqual(result.projects[0]!.challengeIds, []);
 });
 

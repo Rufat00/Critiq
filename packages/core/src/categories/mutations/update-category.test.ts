@@ -144,6 +144,7 @@ test('category edits authorize organizers, scope categories, and validate method
       ...input,
       kind: 'CHALLENGE',
       method: 'RATING_SCALE',
+      trackIds: ['overall-track'],
     }),
     'NOT_FOUND',
   );

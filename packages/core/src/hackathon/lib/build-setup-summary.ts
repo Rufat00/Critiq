@@ -27,12 +27,11 @@ export function buildSetupSummary({ hackathon: h, judges }: SetupSnapshot) {
         `${category.name}: choose a judging method supported by this category.`,
       );
     const eligible = projects.filter((p) => {
-      if (category.kind === 'TRACK') return category.track?.id === p.trackId;
       if (category.kind === 'CHALLENGE')
         return p.challenges.some(
           (entry) => entry.challengeId === category.challenge?.id,
         );
-      return p.trackId === null; // Specialized-track projects do not enter Overall.
+      return category.track?.id === p.trackId;
     });
     // Overall has no judging work when every project belongs to a specialized track.
     if (category.kind === 'OVERALL' && !eligible.length) continue;
@@ -72,7 +71,7 @@ export function buildSetupSummary({ hackathon: h, judges }: SetupSnapshot) {
     if (!key) blockers.push('A project is missing its name.');
     if (p.roomId && !h.rooms.some((r) => r.id === p.roomId && r.isActive))
       blockers.push(`${p.name}: choose an active room in this hackathon.`);
-    if (p.trackId && !h.categories.some((c) => c.track?.id === p.trackId))
+    if (!h.categories.some((c) => c.track?.id === p.trackId))
       blockers.push(`${p.name}: track does not belong to this hackathon.`);
     for (const entry of p.challenges) {
       const category = h.categories.find(
@@ -83,15 +82,11 @@ export function buildSetupSummary({ hackathon: h, judges }: SetupSnapshot) {
           `${p.name}: challenge does not belong to this hackathon.`,
         );
       else if (
-        p.trackId === null
-          ? !category.challenge.includesOverall
-          : !category.challenge.allowedTracks.some(
-              (t) => t.trackId === p.trackId,
-            )
+        !category.challenge.allowedTracks.some((t) => t.trackId === p.trackId)
       )
         blockers.push(`${p.name}: track is not eligible for ${category.name}.`);
     }
-    if (p.roomId && p.tableNumber !== null && p.trackId) {
+    if (p.roomId && p.tableNumber !== null) {
       const room = h.rooms.find((r) => r.id === p.roomId);
       const trackRoom = room?.trackRooms.find(
         (r) => r.trackId === p.trackId && r.isActive,

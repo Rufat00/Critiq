@@ -10,6 +10,6 @@ export function projectData(input: CreateProjectInput) {
     demoUrl: input.demoUrl || null,
     externalId:
       submissionUrl?.match(/\/submissions\/(\d+)(?:-|\/|$)/)?.[1] ?? null,
-    trackId: input.trackId ?? null,
+    trackId: input.trackId,
   };
 }

@@ -14,7 +14,6 @@ export const createCategorySchema = z
       .max(2000, 'Use 2,000 characters or fewer.')
       .default(''),
     method: z.enum(['RELATIVE', 'RATING_SCALE', 'RUBRIC']),
-    includesOverall: z.boolean().default(true),
     trackIds: z.array(z.string().trim().min(1).max(128)).max(500).default([]),
     challengeIds: z
       .array(z.string().trim().min(1).max(128))
@@ -57,10 +56,7 @@ export const createCategorySchema = z
           message: 'Choose each entry only once.',
         });
     }
-    if (
-      input.kind === 'TRACK' &&
-      (input.trackIds.length || !input.includesOverall)
-    )
+    if (input.kind === 'TRACK' && input.trackIds.length)
       ctx.addIssue({
         code: 'custom',
         path: ['trackIds'],
@@ -73,7 +69,7 @@ export const createCategorySchema = z
           path: ['challengeIds'],
           message: 'Challenges can only select tracks.',
         });
-      if (!input.includesOverall && !input.trackIds.length)
+      if (!input.trackIds.length)
         ctx.addIssue({
           code: 'custom',
           path: ['trackIds'],

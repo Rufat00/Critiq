@@ -57,7 +57,7 @@ export function ProjectsSection({ data }: { data: ProjectsPageData }) {
       <div className="grid gap-3 sm:grid-cols-3">
         <ProjectFormDialog
           categories={data.categories}
-          defaultTrackId={track?.trackId ?? null}
+          defaultTrackId={track?.trackId ?? ''}
           locked={locked}
         >
           <ActionTile icon={<RiAddLine />} disabled={locked || !track}>

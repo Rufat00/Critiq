@@ -177,7 +177,7 @@ model Hackathon {
 }
 
 // The shared container for judging settings and results.
-// Each category has exactly one subtype: OVERALL, TRACK, or CHALLENGE.
+// OVERALL and TRACK categories each have a Track; CHALLENGE has a Challenge.
 // Enforce the subtype invariant in application logic/SQL triggers.
 model JudgingCategory {
   id                String         @id @default(cuid())
@@ -216,16 +216,14 @@ model JudgingCategory {
 }
 
 model Track {
-  id                      String   @id @default(cuid())
-  hackathonId             String
-  categoryId              String   @unique
-  // Only specialized tracks have Track rows. Overall is a JudgingCategory alone.
-  // Specialized tracks are always excluded from Overall. Enforced by SQL.
-  disqualifiesFromOverall Boolean  @default(true)
+  id                String   @id @default(cuid())
+  hackathonId       String
+  categoryId        String   @unique
+  // Overall and specialized tracks share the same project and room configuration.
   // Percentage of eligible room projects completed before rotation.
-  roomSwitchPercent       Int      @default(25)
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+  roomSwitchPercent Int      @default(25)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   hackathon         Hackathon        @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
   category          JudgingCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
@@ -240,8 +238,6 @@ model Challenge {
   id          String   @id @default(cuid())
   hackathonId String
   categoryId  String   @unique
-  // Overall is separate from specialized tracks and is selected explicitly.
-  includesOverall Boolean @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -316,7 +312,7 @@ model Project {
   demoUrl        String?
   roomId         String?
   tableNumber    Int?
-  trackId        String? // Zero or one specialized track.
+  trackId        String // Every project belongs to exactly one track, including Overall.
   isActive       Boolean  @default(true)
   isDisqualified Boolean  @default(false)
   createdAt      DateTime @default(now())
@@ -324,7 +320,7 @@ model Project {
 
   hackathon   Hackathon                 @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
   room        Room?                     @relation(fields: [roomId], references: [id], onDelete: SetNull)
-  track       Track?                    @relation(fields: [trackId], references: [id], onDelete: SetNull)
+  track       Track                     @relation(fields: [trackId], references: [id], onDelete: Restrict)
   challenges  ProjectChallenge[]
   assignments JudgingAssignment[]
   evaluations Evaluation[]

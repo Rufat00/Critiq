@@ -76,13 +76,22 @@ export async function registerAccount(
           AppErrorCode.INVALID_STATE,
           'Password registration is unavailable.',
         );
-      const hackathon =
-        (await tx.hackathon.findFirst()) ??
-        (await tx.hackathon.create({
+      let hackathon = await tx.hackathon.findFirst();
+      if (!hackathon) {
+        const hackathonId = randomUUID();
+        hackathon = await tx.hackathon.create({
           data: {
-            categories: { create: { kind: 'OVERALL', name: 'Overall' } },
+            id: hackathonId,
+            categories: {
+              create: {
+                kind: 'OVERALL',
+                name: 'Overall',
+                track: { create: { hackathonId } },
+              },
+            },
           },
-        }));
+        });
+      }
       const invitation =
         access.kind === 'invitation' ? access.invitation : null;
       if (

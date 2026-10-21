@@ -25,7 +25,7 @@ export const createCategory = createMutation({
           where: {
             hackathonId,
             id: { in: input.trackIds },
-            category: { hackathonId, kind: 'TRACK' },
+            category: { hackathonId, kind: { in: ['OVERALL', 'TRACK'] } },
           },
           select: { id: true },
         })
@@ -64,7 +64,6 @@ export const createCategory = createMutation({
               track: {
                 create: {
                   hackathonId,
-                  disqualifiesFromOverall: true,
                   ...(challenges.length
                     ? {
                         allowedChallenges: {
@@ -81,7 +80,6 @@ export const createCategory = createMutation({
               challenge: {
                 create: {
                   hackathonId,
-                  includesOverall: input.includesOverall,
                   ...(tracks.length
                     ? {
                         allowedTracks: {
@@ -121,8 +119,6 @@ export const createCategory = createMutation({
     return {
       ...category,
       criteria: input.criteria,
-      includesOverall:
-        input.kind === 'CHALLENGE' ? input.includesOverall : null,
       trackIds: tracks.map((track) => track.id),
       challengeIds: challenges.map((challenge) => challenge.id),
     };

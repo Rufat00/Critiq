@@ -26,9 +26,7 @@ export const updateCategory = createMutation({
       (category.kind === 'CHALLENGE'
         ? input.kind !== 'CHALLENGE' ||
           category.challenge?.hackathonId !== hackathonId
-        : input.kind !== 'TRACK' ||
-          (category.kind === 'TRACK' &&
-            category.track?.hackathonId !== hackathonId))
+        : input.kind !== 'TRACK' || category.track?.hackathonId !== hackathonId)
     )
       throw new AppError(
         AppErrorCode.NOT_FOUND,
@@ -74,7 +72,7 @@ export const updateCategory = createMutation({
           where: {
             id: { in: input.trackIds },
             hackathonId,
-            category: { hackathonId, kind: 'TRACK' },
+            category: { hackathonId, kind: { in: ['OVERALL', 'TRACK'] } },
           },
           select: { id: true },
         })
@@ -106,15 +104,7 @@ export const updateCategory = createMutation({
         },
       );
     const previousChallengeIds =
-      category.kind === 'OVERALL'
-        ? (
-            await ctx.db.challenge.findMany({
-              where: { hackathonId, includesOverall: true },
-              select: { id: true },
-            })
-          ).map((item) => item.id)
-        : (category.track?.allowedChallenges.map((item) => item.challengeId) ??
-          []);
+      category.track?.allowedChallenges.map((item) => item.challengeId) ?? [];
     const previousTrackIds =
       category.challenge?.allowedTracks.map((item) => item.trackId) ?? [];
     const removedChallengeIds = previousChallengeIds.filter(
@@ -123,23 +113,13 @@ export const updateCategory = createMutation({
     const removedTrackIds = previousTrackIds.filter(
       (id) => !input.trackIds.includes(id),
     );
-    const removesOverall =
-      category.challenge?.includesOverall && !input.includesOverall;
     const conflictingEntries =
       category.kind === 'CHALLENGE'
-        ? removedTrackIds.length || removesOverall
+        ? removedTrackIds.length
           ? await ctx.db.projectChallenge.count({
               where: {
                 challengeId: category.challenge!.id,
-                project: {
-                  hackathonId,
-                  OR: [
-                    ...(removedTrackIds.length
-                      ? [{ trackId: { in: removedTrackIds } }]
-                      : []),
-                    ...(removesOverall ? [{ trackId: null }] : []),
-                  ],
-                },
+                project: { hackathonId, trackId: { in: removedTrackIds } },
               },
             })
           : 0
@@ -147,11 +127,7 @@ export const updateCategory = createMutation({
           ? await ctx.db.projectChallenge.count({
               where: {
                 challengeId: { in: removedChallengeIds },
-                project: {
-                  hackathonId,
-                  trackId:
-                    category.kind === 'OVERALL' ? null : category.track!.id,
-                },
+                project: { hackathonId, trackId: category.track!.id },
               },
             })
           : 0;
@@ -168,10 +144,6 @@ export const updateCategory = createMutation({
 
     if (category.kind === 'CHALLENGE') {
       const challengeId = category.challenge!.id;
-      await ctx.db.challenge.update({
-        where: { id: challengeId, hackathonId },
-        data: { includesOverall: input.includesOverall },
-      });
       await ctx.db.challengeTrack.deleteMany({
         where: { challengeId, trackId: { in: removedTrackIds } },
       });
@@ -179,15 +151,6 @@ export const updateCategory = createMutation({
         data: input.trackIds
           .filter((id) => !previousTrackIds.includes(id))
           .map((trackId) => ({ challengeId, trackId })),
-      });
-    } else if (category.kind === 'OVERALL') {
-      await ctx.db.challenge.updateMany({
-        where: { hackathonId, id: { in: removedChallengeIds } },
-        data: { includesOverall: false },
-      });
-      await ctx.db.challenge.updateMany({
-        where: { hackathonId, id: { in: input.challengeIds } },
-        data: { includesOverall: true },
       });
     } else {
       const trackId = category.track!.id;
@@ -232,7 +195,6 @@ export const updateCategory = createMutation({
         description: category.description,
         method: category.method,
         criteria,
-        includesOverall: category.challenge?.includesOverall ?? null,
         trackIds: previousTrackIds,
         challengeIds: previousChallengeIds,
       },
@@ -241,8 +203,6 @@ export const updateCategory = createMutation({
         description: input.description || null,
         method: input.method,
         criteria: input.criteria,
-        includesOverall:
-          category.kind === 'CHALLENGE' ? input.includesOverall : null,
         trackIds: input.trackIds,
         challengeIds: input.challengeIds,
       },

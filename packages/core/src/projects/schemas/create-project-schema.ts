@@ -20,7 +20,7 @@ export const createProjectSchema = z.object({
   submissionUrl: optionalUrl,
   repositoryUrl: optionalUrl,
   demoUrl: optionalUrl,
-  trackId: z.string().trim().min(1).max(100).nullable().default(null),
+  trackId: z.string().trim().min(1, 'Choose a track.').max(100),
   challengeIds: z.array(z.string().trim().min(1).max(100)).max(100).default([]),
 });
 export type CreateProjectInput = z.input<typeof createProjectSchema>;

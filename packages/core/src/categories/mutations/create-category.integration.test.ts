@@ -32,6 +32,9 @@ test(
           source: 'web-action' as const,
           request: { ipAddress: null, userAgent: null },
         };
+        const overallTrack = await tx.track.findFirstOrThrow({
+          where: { hackathonId: hackathon.id, category: { kind: 'OVERALL' } },
+        });
         const track = await createCategory(ctx, {
           kind: 'TRACK',
           name: `Track check ${randomUUID()}`,
@@ -41,24 +44,26 @@ test(
           where: { categoryId: track.id },
         });
         assert.equal(trackRow.hackathonId, hackathon.id);
-        assert.equal(trackRow.disqualifiesFromOverall, true);
         const challenge = await createCategory(ctx, {
           kind: 'CHALLENGE',
           name: `Challenge check ${randomUUID()}`,
           method: 'RATING_SCALE',
+          trackIds: [overallTrack.id],
         });
         assert.equal(
-          (
-            await tx.challenge.findUniqueOrThrow({
-              where: { categoryId: challenge.id },
-            })
-          ).includesOverall,
-          true,
+          await tx.challengeTrack.count({
+            where: {
+              challenge: { categoryId: challenge.id },
+              trackId: overallTrack.id,
+            },
+          }),
+          1,
         );
         const rubric = await createCategory(ctx, {
           kind: 'CHALLENGE',
           name: `Rubric check ${randomUUID()}`,
           method: 'RUBRIC',
+          trackIds: [overallTrack.id],
           criteria: [
             { name: 'Impact', weight: 20 },
             { name: 'Execution', weight: 80 },
@@ -83,14 +88,12 @@ test(
           kind: 'CHALLENGE',
           name: `Limited challenge ${randomUUID()}`,
           method: 'RATING_SCALE',
-          includesOverall: false,
           trackIds: [trackRow.id],
         });
         const limitedRow = await tx.challenge.findUniqueOrThrow({
           where: { categoryId: limited.id },
           include: { allowedTracks: true },
         });
-        assert.equal(limitedRow.includesOverall, false);
         assert.deepEqual(
           limitedRow.allowedTracks.map((link) => link.trackId),
           [trackRow.id],
@@ -222,21 +225,17 @@ test(
         };
         await setChallengeTrack(ctx, overallMembership);
         assert.equal(
-          (
-            await tx.challenge.findUniqueOrThrow({
-              where: { id: globalRow.id },
-            })
-          ).includesOverall,
-          false,
+          await tx.challengeTrack.count({
+            where: { challengeId: globalRow.id, trackId: overallTrack.id },
+          }),
+          0,
         );
         await setChallengeTrack(ctx, { ...overallMembership, included: true });
         assert.equal(
-          (
-            await tx.challenge.findUniqueOrThrow({
-              where: { id: globalRow.id },
-            })
-          ).includesOverall,
-          true,
+          await tx.challengeTrack.count({
+            where: { challengeId: globalRow.id, trackId: overallTrack.id },
+          }),
+          1,
         );
         assert.equal(
           await tx.auditLog.count({

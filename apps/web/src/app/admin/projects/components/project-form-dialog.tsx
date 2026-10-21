@@ -53,7 +53,7 @@ export function ProjectFormDialog({
   project?: Project;
   mode?: 'edit' | 'move';
   locked: boolean;
-  defaultTrackId: string | null;
+  defaultTrackId: string;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -282,11 +282,10 @@ export function ProjectFormDialog({
                         <Field data-invalid={Boolean(errors.trackId?.length)}>
                           <FieldLabel htmlFor={`${id}-track`}>Track</FieldLabel>
                           <Select
-                            value={field.state.value ?? 'overall'}
+                            value={field.state.value}
                             disabled={pending}
                             onValueChange={(value) => {
-                              const trackId =
-                                value === 'overall' ? null : value;
+                              const trackId = value;
                               field.handleChange(trackId);
                               const track = categories.tracks.find(
                                 (t) => t.trackId === trackId,
@@ -317,7 +316,7 @@ export function ProjectFormDialog({
                                 {categories.tracks.map((track) => (
                                   <SelectItem
                                     key={track.id}
-                                    value={track.trackId ?? 'overall'}
+                                    value={track.trackId}
                                   >
                                     {track.name}
                                   </SelectItem>

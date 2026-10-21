@@ -1,15 +1,15 @@
 # Critiq data model — first implementation draft
 
-`schema.prisma` is designed for PostgreSQL, Prisma and Better Auth (standard Prisma adapter). The shared `JudgingCategory` models independent competitions. Overall is created automatically as a category of kind `OVERALL`, not as a specialized `Track` row. Only projects without a specialized track participate in Overall judging and awards. Specialized tracks always have `disqualifiesFromOverall=true`; inclusion in Overall is not supported. Challenges are independent judging categories and use opt-in membership, restricted by explicit eligible tracks. `Challenge.includesOverall` selects Overall independently and defaults to true; `ChallengeTrack` selects specialized tracks. No future tracks are included automatically.
+`schema.prisma` targets PostgreSQL, Prisma, and Better Auth. `JudgingCategory` owns each competition's judging method, rubric, judge access, and results. Categories of kind `OVERALL` or `TRACK` each have exactly one `Track` record, which owns project membership, room access, table ranges, and rotation settings. Overall is created automatically and protected against deletion or conversion. Every project belongs to exactly one explicit track; projects in specialized tracks do not enter Overall. Challenges use opt-in project entries and explicit `ChallengeTrack` eligibility links, including for Overall. Future tracks are never enrolled automatically.
 
 ## Important application/database invariants
 
 - Only one owner: add a PostgreSQL partial unique index on `"user" (role)` filtered to `role = 'OWNER'` (adjust table mapping/casing if using `@@map`), and serialize owner bootstrap in a transaction.
 - One installation row (`id = 1`), one hackathon per deployment, and exactly one Overall category; enforce with a seed/transaction and SQL constraints where appropriate.
-- Category `kind` must match subtype: TRACK has one Track row; CHALLENGE has one Challenge row; OVERALL has neither.
+- Category `kind` must match subtype: OVERALL and TRACK each have one Track row; CHALLENGE has one Challenge row. Deferred SQL triggers enforce subtype completeness and same-hackathon ownership at commit.
 - Track, project, challenge and room must all belong to the same hackathon; cross-table multi-hop invariants require service validation or composite foreign keys.
 - TrackRoomTableRange bounds must be nonnegative and `fromNumber <= toNumber`; validate no overlap across different tracks sharing the same room when necessary.
-- Overall judging and award eligibility require `Project.trackId=null`. Specialized tracks are excluded; SQL enforces `Track.disqualifiesFromOverall=true`.
+- Every project has a non-null `trackId`. Eligibility for a track, including Overall, compares that ID directly. Tracks with projects cannot be deleted; move the projects first.
 - Challenge eligibility and `ProjectChallenge` opt-in must be checked when selecting projects.
 - `scoreScale` is 5 or 10; criterion scores are within [0, scoreScale]; weights nonnegative; freeze rubric definitions after judging starts.
 - Ranking positions are 1-based and unique for each (category, judge); reorder with a transaction (temporary positions or deferrable uniqueness).

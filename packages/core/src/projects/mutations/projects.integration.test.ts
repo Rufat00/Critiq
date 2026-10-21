@@ -50,6 +50,9 @@ test(
             source: 'web-action' as const,
             request: { ipAddress: null, userAgent: null },
           };
+          const overallTrack = await tx.track.findFirstOrThrow({
+            where: { hackathonId, category: { kind: 'OVERALL' } },
+          });
           const name = (prefix: string) => `${prefix} ${randomUUID()}`;
           const track = await createCategory(ctx, {
             kind: 'TRACK',
@@ -63,8 +66,7 @@ test(
             kind: 'CHALLENGE',
             name: name('Prize'),
             method: 'RATING_SCALE',
-            includesOverall: true,
-            trackIds: [trackRow.id],
+            trackIds: [overallTrack.id, trackRow.id],
           });
           const challengeRow = await tx.challenge.findUniqueOrThrow({
             where: { categoryId: challenge.id },
@@ -73,7 +75,6 @@ test(
             kind: 'CHALLENGE',
             name: name('Restricted'),
             method: 'RATING_SCALE',
-            includesOverall: false,
             trackIds: [trackRow.id],
           });
           const restrictedRow = await tx.challenge.findUniqueOrThrow({
@@ -100,11 +101,18 @@ test(
             },
           };
           await rejects(
-            createProject(judge, { name: 'Forbidden' }),
+            createProject(judge, {
+              trackId: overallTrack.id,
+              name: 'Forbidden',
+            }),
             'FORBIDDEN',
           );
           await rejects(
-            updateProject(judge, { projectId: project.id, name: 'Forbidden' }),
+            updateProject(judge, {
+              projectId: project.id,
+              trackId: overallTrack.id,
+              name: 'Forbidden',
+            }),
             'FORBIDDEN',
           );
           await rejects(
@@ -126,11 +134,12 @@ test(
             'FORBIDDEN',
           );
           await rejects(
-            listProjects(judge, { filters: { trackId: null } }),
+            listProjects(judge, { filters: { trackId: overallTrack.id } }),
             'FORBIDDEN',
           );
           await rejects(
             createProject(ctx, {
+              trackId: overallTrack.id,
               name: 'Bad URL',
               demoUrl: 'javascript:alert(1)',
             }),
@@ -142,6 +151,7 @@ test(
           );
           await rejects(
             createProject(ctx, {
+              trackId: overallTrack.id,
               name: 'Bad challenge',
               challengeIds: ['foreign'],
             }),
@@ -149,19 +159,28 @@ test(
           );
           await rejects(
             createProject(ctx, {
+              trackId: overallTrack.id,
               name: 'Wrong track challenge',
               challengeIds: [restrictedRow.id],
             }),
             'VALIDATION_ERROR',
           );
           await rejects(
-            updateProject(ctx, { projectId: 'foreign', name: 'Missing' }),
+            updateProject(ctx, {
+              projectId: 'foreign',
+              trackId: overallTrack.id,
+              name: 'Missing',
+            }),
             'NOT_FOUND',
           );
           await rejects(
             updateProject(
               { ...ctx, hackathonId: 'foreign' },
-              { projectId: project.id, name: 'Missing' },
+              {
+                projectId: project.id,
+                trackId: overallTrack.id,
+                name: 'Missing',
+              },
             ),
             'INVALID_STATE',
           );
@@ -175,19 +194,19 @@ test(
           await updateProject(ctx, {
             projectId: project.id,
             name: project.name,
-            trackId: null,
+            trackId: overallTrack.id,
             challengeIds: [challengeRow.id],
           });
           const moved = await tx.project.findUniqueOrThrow({
             where: { id: project.id },
             include: { challenges: true },
           });
-          assert.equal(moved.trackId, null);
+          assert.equal(moved.trackId, overallTrack.id);
           assert.equal(moved.roomId, null);
           assert.equal(moved.tableNumber, null);
           assert.equal(moved.challenges[0]!.challengeId, challengeRow.id);
           const list = await listProjects(ctx, {
-            filters: { trackId: null },
+            filters: { trackId: overallTrack.id },
             search: project.name,
           });
           assert.deepEqual(
@@ -205,7 +224,7 @@ test(
             0,
           );
           const empty = await listProjects(ctx, {
-            filters: { trackId: null },
+            filters: { trackId: overallTrack.id },
             search: 'missing-' + randomUUID(),
             pagination: { page: 8, pageSize: 10 },
           });
@@ -292,11 +311,15 @@ test(
               data: { status },
             });
             await rejects(
-              createProject(ctx, { name: 'Locked' }),
+              createProject(ctx, { trackId: overallTrack.id, name: 'Locked' }),
               'INVALID_STATE',
             );
             await rejects(
-              updateProject(ctx, { projectId: project.id, name: 'Locked' }),
+              updateProject(ctx, {
+                projectId: project.id,
+                trackId: overallTrack.id,
+                name: 'Locked',
+              }),
               'INVALID_STATE',
             );
             await rejects(
@@ -338,7 +361,7 @@ test(
             updateProject(ctx, {
               projectId: imported.ids[0]!,
               name: 'Cannot edit judged project',
-              trackId: null,
+              trackId: overallTrack.id,
             }),
             'INVALID_STATE',
           );
@@ -420,10 +443,13 @@ test(
       source: 'web-action',
       request: { ipAddress: null, userAgent: null },
     } as unknown as import('../../context').AppContext;
+    const overallTrack = await db.track.findFirstOrThrow({
+      where: { hackathonId: hackathon.id, category: { kind: 'OVERALL' } },
+    });
     const title = `Rollback ${randomUUID()}`;
     try {
       await rejects(
-        createProject(ctx, { name: title }),
+        createProject(ctx, { name: title, trackId: overallTrack.id }),
         'INTERNAL_SERVER_ERROR',
       );
       assert.equal(

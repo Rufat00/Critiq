@@ -25,9 +25,8 @@ export const setChallengeTrack = createMutation({
     });
     if (
       !trackCategory ||
-      (trackCategory.kind === 'TRACK' &&
-        (!trackCategory.track ||
-          trackCategory.track.hackathonId !== hackathonId))
+      !trackCategory.track ||
+      trackCategory.track.hackathonId !== hackathonId
     )
       throw new AppError(
         AppErrorCode.NOT_FOUND,
@@ -39,7 +38,7 @@ export const setChallengeTrack = createMutation({
         id: true,
         name: true,
         challenge: {
-          select: { id: true, hackathonId: true, includesOverall: true },
+          select: { id: true, hackathonId: true },
         },
       },
     });
@@ -53,18 +52,14 @@ export const setChallengeTrack = createMutation({
         AppErrorCode.NOT_FOUND,
         'Challenge not found. Refresh and try again.',
       );
-    const trackId =
-      trackCategory.kind === 'OVERALL' ? null : trackCategory.track!.id;
-    const existing = trackId
-      ? await ctx.db.challengeTrack.findUnique({
-          where: {
-            challengeId_trackId: { challengeId: challenge.id, trackId },
-          },
-          select: { challengeId: true },
-        })
-      : null;
-    const previouslyIncluded =
-      trackId === null ? challenge.includesOverall : existing !== null;
+    const trackId = trackCategory.track.id;
+    const existing = await ctx.db.challengeTrack.findUnique({
+      where: {
+        challengeId_trackId: { challengeId: challenge.id, trackId },
+      },
+      select: { challengeId: true },
+    });
+    const previouslyIncluded = existing !== null;
     if (previouslyIncluded !== input.included) {
       if (!input.included) {
         const entries = await ctx.db.projectChallenge.count({
@@ -79,12 +74,7 @@ export const setChallengeTrack = createMutation({
             'Projects in this track have entered this challenge. Remove or move those entries before excluding the track.',
           );
       }
-      if (trackId === null) {
-        await ctx.db.challenge.update({
-          where: { id: challenge.id, hackathonId },
-          data: { includesOverall: input.included },
-        });
-      } else if (input.included) {
+      if (input.included) {
         await ctx.db.challengeTrack.upsert({
           where: {
             challengeId_trackId: { challengeId: challenge.id, trackId },

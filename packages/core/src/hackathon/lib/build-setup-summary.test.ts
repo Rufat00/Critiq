@@ -54,7 +54,7 @@ test('visibility does not disable a category and Overall excludes specialized-tr
     id: 'special',
     name: 'Special',
     kind: 'TRACK',
-    track: { id: 'track', disqualifiesFromOverall: true },
+    track: { ...data.hackathon.categories[0]!.track!, id: 'track' },
   } as SetupSnapshot['hackathon']['categories'][number]);
   data.hackathon.categories[0]!.method = 'RUBRIC';
   assert.equal(buildSetupSummary(data).blockers.length, 0);
@@ -62,7 +62,7 @@ test('visibility does not disable a category and Overall excludes specialized-tr
     ...data.hackathon.projects[0]!,
     id: 'overall-project',
     name: 'Overall project',
-    trackId: null,
+    trackId: 'overall-track',
   });
   assert.ok(
     buildSetupSummary(data).blockers.some((s) =>
@@ -165,7 +165,7 @@ test('category methods respect track and challenge compatibility', () => {
   );
 });
 
-test('challenge eligibility honors includesOverall and rejects unlinked restricted tracks', () => {
+test('challenge eligibility honors explicit Overall membership and rejects unlinked restricted tracks', () => {
   const data = snapshot();
   const challenge = {
     ...data.hackathon.categories[0]!,
@@ -175,8 +175,7 @@ test('challenge eligibility honors includesOverall and rejects unlinked restrict
     method: 'RATING_SCALE',
     challenge: {
       id: 'challenge',
-      includesOverall: true,
-      allowedTracks: [{ trackId: 'other-track' }],
+      allowedTracks: [{ trackId: 'overall-track', challengeId: 'challenge' }],
     },
   } as SetupSnapshot['hackathon']['categories'][number];
   data.hackathon.categories.push(challenge);
@@ -186,7 +185,9 @@ test('challenge eligibility honors includesOverall and rejects unlinked restrict
   assert.ok(
     !buildSetupSummary(data).blockers.some((s) => s.includes('not eligible')),
   );
-  challenge.challenge!.includesOverall = false;
+  challenge.challenge!.allowedTracks = [
+    { trackId: 'other-track', challengeId: 'challenge' },
+  ];
   assert.ok(
     buildSetupSummary(data).blockers.some((s) => s.includes('not eligible')),
   );
@@ -206,8 +207,10 @@ test('including Overall never grants challenge eligibility to unselected special
     method: 'RATING_SCALE',
     challenge: {
       id: 'challenge',
-      includesOverall: true,
-      allowedTracks: [{ trackId: 'chosen-track' }],
+      allowedTracks: [
+        { trackId: 'overall-track', challengeId: 'challenge' },
+        { trackId: 'chosen-track', challengeId: 'challenge' },
+      ],
     },
   } as SetupSnapshot['hackathon']['categories'][number];
   data.hackathon.categories.push(challenge);

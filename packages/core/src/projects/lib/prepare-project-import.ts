@@ -25,7 +25,6 @@ export async function prepareProjectImport(
         challenge: {
           select: {
             id: true,
-            includesOverall: true,
             allowedTracks: { select: { trackId: true } },
           },
         },
@@ -73,13 +72,13 @@ export async function prepareProjectImport(
             normalize(c.name) === normalize(row.trackName!),
         )
       : categories.find((c) => c.kind === 'OVERALL');
-    if (!track || (track.kind === 'TRACK' && !track.track)) {
+    if (!track?.track) {
       errors.push(
         `Row ${row.rowNumber}: unknown track “${row.trackName ?? 'Overall'}”. Create it in Judging Categories first.`,
       );
       continue;
     }
-    const trackId = track.track?.id ?? null;
+    const trackId = track.track.id;
     const challengeIds: string[] = [];
     let invalidChallenges = false;
     for (const name of new Set(row.challengeNames.map(normalize))) {
@@ -91,9 +90,7 @@ export async function prepareProjectImport(
       if (!challenge && input.format === 'devpost') continue;
       if (
         !challenge ||
-        !(trackId
-          ? challenge.allowedTracks.some((t) => t.trackId === trackId)
-          : challenge.includesOverall)
+        !challenge.allowedTracks.some((t) => t.trackId === trackId)
       ) {
         errors.push(
           `Row ${row.rowNumber}: challenge “${name}” does not exist or does not include ${track.name}.`,

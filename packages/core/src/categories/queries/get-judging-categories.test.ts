@@ -24,9 +24,9 @@ function database() {
         id: 'overall',
         kind: 'OVERALL',
         name: 'Overall',
-        description: 'Projects without a specialized track',
+        description: 'Default track',
         method: 'RELATIVE',
-        track: null,
+        track: { id: 'overall-track', _count: { projects: 2 } },
         challenge: null,
       },
       {
@@ -47,8 +47,11 @@ function database() {
         track: null,
         challenge: {
           id: 'challenge-open',
-          includesOverall: true,
-          allowedTracks: [{ trackId: 'track-ai' }, { trackId: 'track-web' }],
+          allowedTracks: [
+            { trackId: 'overall-track' },
+            { trackId: 'track-ai' },
+            { trackId: 'track-web' },
+          ],
           _count: { projectEntries: 6 },
         },
       },
@@ -61,7 +64,6 @@ function database() {
         track: null,
         challenge: {
           id: 'challenge-limited',
-          includesOverall: false,
           allowedTracks: [{ trackId: 'track-ai' }],
           _count: { projectEntries: 2 },
         },
@@ -75,7 +77,6 @@ function database() {
         track: null,
         challenge: {
           id: 'challenge-unlinked',
-          includesOverall: false,
           allowedTracks: [],
           _count: { projectEntries: 0 },
         },
@@ -84,16 +85,6 @@ function database() {
   };
   const ctx = {
     db: {
-      project: {
-        count: async ({
-          where,
-        }: {
-          where: { hackathonId: string; trackId: null };
-        }) => {
-          assert.deepEqual(where, { hackathonId: 'event', trackId: null });
-          return 2;
-        },
-      },
       hackathon: {
         findUnique: async (query: { where: { id: string } }) => {
           calls.push(query);
@@ -117,14 +108,7 @@ test('category overview resolves Overall, explicit challenge membership, restric
     result.challenges.find((c) => c.id === 'open')!.challengeId,
     'challenge-open',
   );
-  assert.equal(
-    result.challenges.find((c) => c.id === 'open')!.includesOverall,
-    true,
-  );
-  assert.equal(
-    result.challenges.find((c) => c.id === 'restricted')!.includesOverall,
-    false,
-  );
+  assert.equal(result.tracks[0]!.trackId, 'overall-track');
   assert.equal(result.tracks[0]!.projectCount, 2);
   assert.equal(result.tracks.find((t) => t.id === 'ai')!.projectCount, 3);
   assert.deepEqual(result.challenges.find((c) => c.id === 'open')!.trackIds, [

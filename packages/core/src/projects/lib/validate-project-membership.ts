@@ -4,17 +4,16 @@ import { AppError, AppErrorCode } from '../../shared/errors';
 
 export async function validateProjectMembership(
   ctx: AppContext,
-  trackId: string | null,
+  trackId: string,
   challengeIds: string[],
 ) {
   const hackathonId = requireHackathonId(ctx);
   if (
-    trackId &&
     !(await ctx.db.track.findFirst({
       where: {
         id: trackId,
         hackathonId,
-        category: { hackathonId, kind: 'TRACK' },
+        category: { hackathonId, kind: { in: ['OVERALL', 'TRACK'] } },
       },
       select: { id: true },
     }))
@@ -30,9 +29,7 @@ export async function validateProjectMembership(
       hackathonId,
       id: { in: ids },
       category: { hackathonId, kind: 'CHALLENGE' },
-      ...(trackId
-        ? { allowedTracks: { some: { trackId } } }
-        : { includesOverall: true }),
+      allowedTracks: { some: { trackId } },
     },
   });
   if (eligible !== ids.length)

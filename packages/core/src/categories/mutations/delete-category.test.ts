@@ -12,6 +12,7 @@ function database({
   kind = 'TRACK',
   activity = 0,
   status = 'DRAFT',
+  projects = 0,
 } = {}) {
   let state = { deleted: false, audits: [] as unknown[], status };
   let queue = Promise.resolve();
@@ -22,6 +23,7 @@ function database({
     name: 'AI',
     description: null,
     method: 'RELATIVE',
+    track: { _count: { projects } },
     _count: { assignments: activity, evaluations: 0, rankings: 0 },
   };
   function client(draft: typeof state) {
@@ -168,4 +170,11 @@ test('duplicate concurrent deletes only commit one deletion and one audit', asyn
   ]);
   assert.equal(results.filter((r) => r.status === 'fulfilled').length, 1);
   assert.equal(db.read().audits.length, 1);
+});
+
+test('occupied tracks must have their projects moved before deletion', async () => {
+  const db = database({ projects: 2 });
+  await rejects(deleteCategory(db.ctx, { categoryId: 'category' }), 'CONFLICT');
+  assert.equal(db.read().deleted, false);
+  assert.equal(db.read().audits.length, 0);
 });

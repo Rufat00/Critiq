@@ -42,6 +42,9 @@ test(
             request: { ipAddress: null, userAgent: null },
           };
           const name = (label: string) => `${label} ${randomUUID()}`;
+          const overallTrack = await tx.track.findFirstOrThrow({
+            where: { hackathonId: hackathon.id, category: { kind: 'OVERALL' } },
+          });
           const track = await createCategory(ctx, {
             kind: 'TRACK',
             name: name('Track'),
@@ -54,6 +57,7 @@ test(
             kind: 'CHALLENGE',
             name: name('Challenge'),
             method: 'RATING_SCALE',
+            trackIds: [overallTrack.id],
           });
           const challengeRow = await tx.challenge.findUniqueOrThrow({
             where: { categoryId: challenge.id },
@@ -63,7 +67,6 @@ test(
             kind: 'CHALLENGE' as const,
             name: challenge.name,
             method: 'RATING_SCALE' as const,
-            includesOverall: true,
             trackIds: [trackRow.id],
           };
           await updateCategory(ctx, base);
@@ -88,7 +91,7 @@ test(
           await rejects(
             updateCategory(ctx, {
               ...base,
-              trackIds: [],
+              trackIds: [overallTrack.id],
               name: name('Rejected edit'),
             }),
             'CONFLICT',
@@ -196,10 +199,10 @@ test(
               },
             },
           });
-          await updateCategory(ctx, { ...base, trackIds: [] });
+          await updateCategory(ctx, { ...base, trackIds: [overallTrack.id] });
           assert.equal(
             await tx.challengeTrack.count({
-              where: { challengeId: challengeRow.id },
+              where: { challengeId: challengeRow.id, trackId: trackRow.id },
             }),
             0,
           );
@@ -220,7 +223,10 @@ test(
             where: { hackathonId: hackathon.id, kind: 'OVERALL' },
           });
           const overallChallenges = await tx.challenge.findMany({
-            where: { hackathonId: hackathon.id, includesOverall: true },
+            where: {
+              hackathonId: hackathon.id,
+              allowedTracks: { some: { trackId: overallTrack.id } },
+            },
           });
           const overallInput = {
             categoryId: overall.id,
@@ -235,6 +241,7 @@ test(
             data: {
               hackathonId: hackathon.id,
               name: name('Overall project'),
+              trackId: overallTrack.id,
               challenges: { create: { challengeId: challengeRow.id } },
             },
           });
@@ -249,24 +256,20 @@ test(
           });
           await updateCategory(ctx, overallInput);
           assert.equal(
-            (
-              await tx.challenge.findUniqueOrThrow({
-                where: { id: challengeRow.id },
-              })
-            ).includesOverall,
-            false,
+            await tx.challengeTrack.count({
+              where: { challengeId: challengeRow.id, trackId: overallTrack.id },
+            }),
+            0,
           );
           await updateCategory(ctx, {
             ...overallInput,
             challengeIds: [...overallInput.challengeIds, challengeRow.id],
           });
           assert.equal(
-            (
-              await tx.challenge.findUniqueOrThrow({
-                where: { id: challengeRow.id },
-              })
-            ).includesOverall,
-            true,
+            await tx.challengeTrack.count({
+              where: { challengeId: challengeRow.id, trackId: overallTrack.id },
+            }),
+            1,
           );
           assert.equal(
             (
@@ -275,11 +278,6 @@ test(
               })
             ).kind,
             'OVERALL',
-          );
-          assert.equal(
-            (await tx.track.findUniqueOrThrow({ where: { id: trackRow.id } }))
-              .disqualifiesFromOverall,
-            true,
           );
           const audits = await tx.auditLog.findMany({
             where: { action: 'categories.update', entityId: challenge.id },

@@ -94,12 +94,29 @@ test('project validation rejects unsafe URLs, empty titles, oversized descriptio
     'not a URL',
   ])
     assert.equal(
-      createProjectSchema.safeParse({ name: 'Project', demoUrl: url }).success,
+      createProjectSchema.safeParse({
+        name: 'Project',
+        trackId: 'overall-track',
+        demoUrl: url,
+      }).success,
       false,
     );
-  assert.equal(createProjectSchema.safeParse({ name: '  ' }).success, false);
+  assert.equal(
+    createProjectSchema.safeParse({ name: '  ', trackId: 'overall-track' })
+      .success,
+    false,
+  );
+  assert.equal(
+    createProjectSchema.safeParse({ name: 'Project' }).success,
+    false,
+  );
+  assert.equal(
+    createProjectSchema.safeParse({ name: 'Project', trackId: null }).success,
+    false,
+  );
   assert.equal(
     createProjectSchema.safeParse({
+      trackId: 'overall-track',
       name: 'Project',
       description: 'x'.repeat(20001),
     }).success,
@@ -112,6 +129,7 @@ test('project validation rejects unsafe URLs, empty titles, oversized descriptio
   );
   assert.equal(
     createProjectSchema.parse({
+      trackId: 'overall-track',
       name: ' Project ',
       submissionUrl: ' https://example.com ',
     }).submissionUrl,

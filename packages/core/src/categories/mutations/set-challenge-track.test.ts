@@ -15,7 +15,7 @@ function database({
 } = {}) {
   let state = {
     included: false,
-    includesOverall: true,
+    overallIncluded: true,
     entries: 0,
     writes: 0,
     audits: [] as unknown[],
@@ -62,7 +62,10 @@ function database({
               id: where.id,
               name: 'Overall',
               kind: 'OVERALL',
-              track: null,
+              track: {
+                id: 'overall-track',
+                hackathonId: corruptSubtype ? 'foreign' : 'event',
+              },
             };
           if (where.id === 'challenge-category' && matches('CHALLENGE'))
             return {
@@ -71,7 +74,6 @@ function database({
               challenge: {
                 id: 'challenge',
                 hackathonId: corruptSubtype ? 'foreign' : 'event',
-                includesOverall: draft.includesOverall,
               },
             };
           return null;
@@ -85,22 +87,21 @@ function database({
             challengeId_trackId: { challengeId: string; trackId: string };
           };
         }) => {
-          assert.deepEqual(where.challengeId_trackId, {
-            challengeId: 'challenge',
-            trackId: 'track',
-          });
-          return draft.included ? { challengeId: 'challenge' } : null;
+          assert.equal(where.challengeId_trackId.challengeId, 'challenge');
+          const included =
+            where.challengeId_trackId.trackId === 'overall-track'
+              ? draft.overallIncluded
+              : draft.included;
+          return included ? { challengeId: 'challenge' } : null;
         },
         upsert: async ({
           create,
         }: {
           create: { challengeId: string; trackId: string };
         }) => {
-          assert.deepEqual(create, {
-            challengeId: 'challenge',
-            trackId: 'track',
-          });
-          draft.included = true;
+          assert.equal(create.challengeId, 'challenge');
+          if (create.trackId === 'overall-track') draft.overallIncluded = true;
+          else draft.included = true;
           draft.writes++;
         },
         deleteMany: async ({
@@ -108,24 +109,9 @@ function database({
         }: {
           where: { challengeId: string; trackId: string };
         }) => {
-          assert.deepEqual(where, {
-            challengeId: 'challenge',
-            trackId: 'track',
-          });
-          draft.included = false;
-          draft.writes++;
-        },
-      },
-      challenge: {
-        update: async ({
-          where,
-          data,
-        }: {
-          where: { id: string; hackathonId: string };
-          data: { includesOverall: boolean };
-        }) => {
-          assert.deepEqual(where, { id: 'challenge', hackathonId: 'event' });
-          draft.includesOverall = data.includesOverall;
+          assert.equal(where.challengeId, 'challenge');
+          if (where.trackId === 'overall-track') draft.overallIncluded = false;
+          else draft.included = false;
           draft.writes++;
         },
       },
@@ -135,14 +121,12 @@ function database({
         }: {
           where: {
             challengeId: string;
-            project: { hackathonId: string; trackId: string | null };
+            project: { hackathonId: string; trackId: string };
           };
         }) => {
           assert.equal(where.challengeId, 'challenge');
           assert.equal(where.project.hackathonId, 'event');
-          assert.ok(
-            where.project.trackId === null || where.project.trackId === 'track',
-          );
+          assert.ok(['overall-track', 'track'].includes(where.project.trackId));
           return draft.entries;
         },
       },
@@ -199,7 +183,7 @@ test('membership adds and removes one specialized track with before/after audit'
   assert.equal(db.read().included, true);
   await setChallengeTrack(db.ctx, { ...input, included: false });
   assert.equal(db.read().included, false);
-  assert.equal(db.read().includesOverall, true);
+  assert.equal(db.read().overallIncluded, true);
   assert.equal(db.read().audits.length, 2);
   const audit = db.read().audits[0] as {
     actorId: string;
@@ -221,13 +205,13 @@ test('Overall membership is independent of specialized-track membership', async 
     included: false,
   });
   assert.equal(db.read().included, true);
-  assert.equal(db.read().includesOverall, false);
+  assert.equal(db.read().overallIncluded, false);
   await setChallengeTrack(db.ctx, {
     ...input,
     trackCategoryId: 'overall-category',
     included: true,
   });
-  assert.equal(db.read().includesOverall, true);
+  assert.equal(db.read().overallIncluded, true);
 });
 
 test('membership authorizes organizers, validates IDs and types, and rejects foreign scopes and subtypes', async () => {
@@ -318,7 +302,7 @@ test('memberships with existing project entries cannot be removed, including Ove
     'CONFLICT',
   );
   assert.equal(db.read().included, true);
-  assert.equal(db.read().includesOverall, true);
+  assert.equal(db.read().overallIncluded, true);
   assert.equal(db.read().audits.length, 1);
 });
 

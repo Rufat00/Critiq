@@ -39,7 +39,6 @@ export const getJudgingCategories = createQuery({
             challenge: {
               select: {
                 id: true,
-                includesOverall: true,
                 allowedTracks: {
                   where: { track: { hackathonId } },
                   select: { trackId: true },
@@ -57,29 +56,30 @@ export const getJudgingCategories = createQuery({
     });
     if (!hackathon)
       throw new AppError(AppErrorCode.NOT_FOUND, 'Hackathon not found.');
-    const overallProjectCount = await db.project.count({
-      where: { hackathonId, trackId: null },
-    });
     const tracks = hackathon.categories
       .filter((c) => c.kind !== 'CHALLENGE')
-      .map((c) => ({
-        id: c.id,
-        name: c.name,
-        description: c.description,
-        method: c.method,
-        criteria:
-          c.rubric?.criteria.map((item) => ({
-            id: item.id,
-            name: item.name,
-            weight: item.weight.toNumber(),
-          })) ?? [],
-        isOverall: c.kind === 'OVERALL',
-        trackId: c.track?.id ?? null,
-        projectCount:
-          c.kind === 'OVERALL'
-            ? overallProjectCount
-            : (c.track?._count.projects ?? 0),
-      }))
+      .map((c) => {
+        if (!c.track)
+          throw new AppError(
+            AppErrorCode.INVALID_STATE,
+            'Track configuration is incomplete.',
+          );
+        return {
+          id: c.id,
+          name: c.name,
+          description: c.description,
+          method: c.method,
+          criteria:
+            c.rubric?.criteria.map((item) => ({
+              id: item.id,
+              name: item.name,
+              weight: item.weight.toNumber(),
+            })) ?? [],
+          isOverall: c.kind === 'OVERALL',
+          trackId: c.track.id,
+          projectCount: c.track._count.projects,
+        };
+      })
       .sort((a, b) => Number(b.isOverall) - Number(a.isOverall));
     const challenges = hackathon.categories
       .filter((c) => c.kind === 'CHALLENGE')
@@ -95,15 +95,12 @@ export const getJudgingCategories = createQuery({
             weight: item.weight.toNumber(),
           })) ?? [],
         challengeId: c.challenge?.id ?? null,
-        includesOverall: c.challenge?.includesOverall ?? false,
         projectCount: c.challenge?._count.projectEntries ?? 0,
         trackIds: tracks
           .filter((t) =>
-            t.isOverall
-              ? c.challenge?.includesOverall === true
-              : c.challenge?.allowedTracks.some(
-                  (link) => link.trackId === t.trackId,
-                ),
+            c.challenge?.allowedTracks.some(
+              (link) => link.trackId === t.trackId,
+            ),
           )
           .map((t) => t.id),
       }));

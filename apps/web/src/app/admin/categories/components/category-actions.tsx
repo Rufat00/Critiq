@@ -68,9 +68,13 @@ export function CategoryActions({
   const submitting = useRef(false);
   const trigger = useRef<HTMLButtonElement>(null);
   const router = useRouter();
+  const hasProjects =
+    (categories.tracks.find((track) => track.id === id)?.projectCount ?? 0) > 0;
   const reason = isOverall
     ? 'Overall is required and cannot be deleted.'
-    : 'Return the hackathon to draft to delete categories.';
+    : locked
+      ? 'Return the hackathon to draft to delete categories.'
+      : 'Move projects to another track before deleting this track.';
   function remove() {
     if (submitting.current) return;
     submitting.current = true;
@@ -177,7 +181,7 @@ export function CategoryActions({
                 </DropdownMenuSubContent>
               </DropdownMenuPortal>
             </DropdownMenuSub>
-            {isOverall || locked ? (
+            {isOverall || locked || hasProjects ? (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span tabIndex={0} aria-label={reason} className="block">
@@ -236,7 +240,8 @@ export function CategoryActions({
             <AlertDialogTitle>Delete {name}?</AlertDialogTitle>
             <AlertDialogDescription>
               This permanently removes the category, its rubric, and its
-              category links. Projects are kept. This cannot be undone.
+              category links. Tracks must have no projects before deletion. This
+              cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           {error && (

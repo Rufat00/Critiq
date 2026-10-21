@@ -17,14 +17,12 @@ type CategoryWrite = {
   track?: {
     create: {
       hackathonId: string;
-      disqualifiesFromOverall: boolean;
       allowedChallenges?: { create: { challengeId: string }[] };
     };
   };
   challenge?: {
     create: {
       hackathonId: string;
-      includesOverall: boolean;
       allowedTracks?: { create: { trackId: string }[] };
     };
   };
@@ -83,15 +81,15 @@ function database({ status = 'DRAFT', failAudit = false } = {}) {
           where: {
             hackathonId: string;
             id: { in: string[] };
-            category: { hackathonId: string; kind: string };
+            category: { hackathonId: string; kind: unknown };
           };
         }) => {
           assert.deepEqual(where.category, {
             hackathonId: 'event',
-            kind: 'TRACK',
+            kind: { in: ['OVERALL', 'TRACK'] },
           });
           return where.hackathonId === 'event'
-            ? [{ id: 'track-one' }].filter((row) =>
+            ? [{ id: 'track-one' }, { id: 'overall-track' }].filter((row) =>
                 where.id.in.includes(row.id),
               )
             : [];
@@ -104,7 +102,7 @@ function database({ status = 'DRAFT', failAudit = false } = {}) {
           where: {
             hackathonId: string;
             id: { in: string[] };
-            category: { hackathonId: string; kind: string };
+            category: { hackathonId: string; kind: unknown };
           };
         }) => {
           assert.deepEqual(where.category, {
@@ -112,10 +110,9 @@ function database({ status = 'DRAFT', failAudit = false } = {}) {
             kind: 'CHALLENGE',
           });
           return where.hackathonId === 'event'
-            ? [
-                { id: 'challenge-limited', includesOverall: false },
-                { id: 'challenge-overall', includesOverall: true },
-              ].filter((row) => where.id.in.includes(row.id))
+            ? [{ id: 'challenge-limited' }, { id: 'challenge-overall' }].filter(
+                (row) => where.id.in.includes(row.id),
+              )
             : [];
         },
       },
@@ -179,23 +176,27 @@ test('creation trims input, scopes subtype, enforces track exclusion, and audits
   assert.equal(result.name, 'AI');
   assert.equal(db.read().categories[0]!.description, null);
   assert.deepEqual(db.read().categories[0]!.track, {
-    create: { hackathonId: 'event', disqualifiesFromOverall: true },
+    create: { hackathonId: 'event' },
   });
   assert.equal(db.read().categories[0]!.challenge, undefined);
   assert.equal(db.read().categories[0]!.rubric, undefined);
   assert.equal(db.read().audits.length, 1);
 });
 
-test('challenge creation defaults to Overall and rubric criteria persist in order as percentages', async () => {
+test('challenge creation explicitly selects Overall and rubric criteria persist in order as percentages', async () => {
   const db = database();
   await createCategory(db.ctx, {
     kind: 'CHALLENGE',
     name: 'Sponsor prize',
     method: 'RATING_SCALE',
     description: ' Optional award ',
+    trackIds: ['overall-track'],
   });
   assert.deepEqual(db.read().categories[0]!.challenge, {
-    create: { hackathonId: 'event', includesOverall: true },
+    create: {
+      hackathonId: 'event',
+      allowedTracks: { create: [{ trackId: 'overall-track' }] },
+    },
   });
   assert.equal(db.read().categories[0]!.description, 'Optional award');
   await createCategory(db.ctx, rubricInput());
@@ -315,12 +316,10 @@ test('selected memberships persist explicitly on the correct subtype', async () 
     kind: 'CHALLENGE',
     name: 'Limited prize',
     method: 'RATING_SCALE',
-    includesOverall: false,
     trackIds: ['track-one'],
   });
   assert.deepEqual(db.read().categories[0]!.challenge?.create, {
     hackathonId: 'event',
-    includesOverall: false,
     allowedTracks: { create: [{ trackId: 'track-one' }] },
   });
   assert.deepEqual(challenge.trackIds, ['track-one']);
@@ -348,15 +347,14 @@ test('Overall and specialized tracks can be selected together without enrolling 
     kind: 'CHALLENGE',
     name: 'Mixed membership',
     method: 'RATING_SCALE',
-    includesOverall: true,
-    trackIds: ['track-one'],
+    trackIds: ['overall-track', 'track-one'],
   });
-  assert.equal(result.includesOverall, true);
-  assert.deepEqual(result.trackIds, ['track-one']);
+  assert.deepEqual(result.trackIds.sort(), ['overall-track', 'track-one']);
   assert.deepEqual(db.read().categories[0]!.challenge?.create, {
     hackathonId: 'event',
-    includesOverall: true,
-    allowedTracks: { create: [{ trackId: 'track-one' }] },
+    allowedTracks: {
+      create: [{ trackId: 'track-one' }, { trackId: 'overall-track' }],
+    },
   });
 });
 
@@ -371,7 +369,6 @@ test('foreign or missing membership IDs cannot create a category or audit', asyn
       kind: 'CHALLENGE',
       name: 'Challenge',
       method: 'RATING_SCALE',
-      includesOverall: false,
       trackIds: ['foreign-track'],
     }),
     'NOT_FOUND',
@@ -388,14 +385,12 @@ test('membership options reject conflicting modes, wrong subtype, duplicate IDs,
     method: 'RATING_SCALE',
   } as const;
   const invalid: CreateCategoryInput[] = [
-    { ...base, includesOverall: false },
     { ...base, trackIds: ['track-one'] },
     { ...base, challengeIds: ['challenge-limited', 'challenge-limited'] },
     { ...challenge, challengeIds: ['challenge-limited'] },
-    { ...challenge, includesOverall: false, trackIds: [] },
+    { ...challenge, trackIds: [] },
     {
       ...challenge,
-      includesOverall: false,
       trackIds: ['track-one', 'track-one'],
     },
     {

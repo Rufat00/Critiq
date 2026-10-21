@@ -71,10 +71,10 @@ unique constraints. A subsequent migration enforces:
 - Valid invitation maximum/use counts.
 
 Constraints enforce _at most one_ singleton; provisioning creates the required
-records. The Overall category is protected against deletion and conversion by database triggers.
+records. Overall has a required Track and is protected against deletion and conversion. Deferred triggers enforce category/subtype completeness and ownership. Project track membership is required, and the foreign key restricts deleting occupied tracks.
 
-Core must still enforce the supplied cross-record rules: category/subtype
-agreement, common hackathon ownership, eligibility and conflicts, current-room
+Core must still enforce the supplied cross-record rules: common hackathon
+ownership for projects, room links and challenge links, eligibility and conflicts, current-room
 validity, non-overlapping table ranges where required, rubric locking and score
 upper bounds for the hackathon's scale, exact assignment/evaluation identity,
 completed-assignment evaluation existence, method compatibility, invitation
@@ -121,8 +121,8 @@ live judging/results workflows remain separate work.
 
 ## Category configuration
 
-The admin categories page lists Overall as the default, protected track without
-creating a specialized `Track` row. Optional descriptions live on
+The admin categories page lists Overall as the default, protected track with
+its own `Track` record. Optional descriptions live on
 `JudgingCategory`. Specialized tracks allow Relational (`RELATIVE`, the default)
 or Rubric judging. Challenges allow Rating Scale (`RATING_SCALE`, the default)
 or Rubric judging. Database checks enforce these method combinations; an insert
@@ -135,20 +135,25 @@ be applied; disposable development data may be reset explicitly by its owner.
 Rating Scale uses the hackathon's configured 5- or 10-point scale; score entry
 and result calculation remain future workflows.
 
-The matrix shows challenge eligibility across tracks, using explicit `ChallengeTrack` links and
-`Challenge.includesOverall`. Overall is selected independently;
+The matrix shows challenge eligibility across tracks using explicit `ChallengeTrack` links,
+including Overall;
 challenge judging remains independent of track awards. Project counts show all
-registered projects or challenge entries, including inactive entries. Overall counts only projects without a specialized track.
+registered projects or challenge entries, including inactive entries. Overall counts projects assigned to its Track ID.
 
 Category deletion requires an organizer, Draft status, no judging activity, and
-an audit committed in the same transaction. It keeps projects and removes the
-category's dependent configuration. Create controls open guarded forms; edit remains a placeholder. New rubric categories require named criteria with weights in 10% increments totaling exactly 100%. Each added item starts at 20%. Category, subtype, rubric criteria, and audit save in one transaction. The staged creation form selects Overall by default for challenges. Specialized tracks are selected individually. New tracks select existing challenges explicitly; future tracks never inherit challenges automatically. Related IDs are checked against the current hackathon, and membership links save with the category and audit.
+an audit committed in the same transaction. A track with projects cannot be deleted;
+move those projects first. Deletion removes the category's dependent configuration. Create controls open guarded forms; edit remains a placeholder. New rubric categories require named criteria with weights in 10% increments totaling exactly 100%. Each added item starts at 20%. Category, subtype, rubric criteria, and audit save in one transaction. The staged creation form selects Overall by default for challenges. Specialized tracks are selected individually. New tracks select existing challenges explicitly; future tracks never inherit challenges automatically. Related IDs are checked against the current hackathon, and membership links save with the category and audit.
 
-Specialized tracks are always excluded from Overall judging and awards. The
-track exclusion migration sets `disqualifiesFromOverall` to true on existing
-tracks, changes its default to true, and rejects false values on inserts and
-updates. Overall eligibility requires `Project.trackId` to be null; allowing
-specialized tracks into Overall is not currently supported.
+Every project has a required `trackId`, including Overall projects. Track judging
+eligibility compares `Project.trackId` with the category's Track ID. Specialized
+tracks remain excluded from Overall. Challenges select eligible track IDs through
+`ChallengeTrack`; there is no separate Overall eligibility flag.
+
+The `20261019000000_explicit_overall_track` migration is a clean pre-production
+change and refuses populated databases before making changes. For an existing
+disposable development database, an explicitly approved development reset is
+required; deploy migrations before running the setup seed. Do not reset shared
+or production data. No automatic data conversion or compatibility path is provided.
 
 The category action menus expose nested checkbox menus for challenge/track
 membership, including Overall. Changes save immediately in Draft, serialize on

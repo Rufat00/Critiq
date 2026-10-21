@@ -18,6 +18,7 @@ export const deleteCategory = createMutation({
         kind: true,
         description: true,
         method: true,
+        track: { select: { _count: { select: { projects: true } } } },
         _count: {
           select: { assignments: true, evaluations: true, rankings: true },
         },
@@ -32,6 +33,11 @@ export const deleteCategory = createMutation({
       throw new AppError(
         AppErrorCode.FORBIDDEN,
         'Overall is required and cannot be deleted.',
+      );
+    if (category.track?._count.projects)
+      throw new AppError(
+        AppErrorCode.CONFLICT,
+        'Move projects to another track before deleting this track.',
       );
     if (
       category._count.assignments ||
