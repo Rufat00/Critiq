@@ -92,7 +92,7 @@ export function ProjectImportDialog({
             return;
           }
           toast.success(
-            `${result.data.added} projects added. ${result.data.duplicates} duplicates and ${result.data.notSubmitted} non-submitted rows skipped.`,
+            `${result.data.added} projects added: ${result.data.placed} placed, ${result.data.unassigned} awaiting available tables. ${result.data.duplicates} duplicates and ${result.data.notSubmitted} non-submitted rows skipped.`,
           );
           setOpen(false);
           reset();

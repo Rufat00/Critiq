@@ -1,3 +1,4 @@
+import { reassignProjectLocations } from '../lib/reassign-project-locations';
 import { randomUUID } from 'node:crypto';
 import { createMutation } from '../../shared/operations';
 import { lockDraft } from '../../hackathon/lib/lock-draft';
@@ -38,8 +39,15 @@ export const importProjects = createMutation({
         await ctx.db.projectChallenge.createMany({ data: challenges });
     }
     const ids = entries.map((project) => project.id);
+    const importedIds = new Set<string>(ids);
+    const locations = entries.length ? await reassignProjectLocations(ctx) : [];
+    const placed = locations.filter(
+      (item) => importedIds.has(item.id) && item.roomId !== null,
+    ).length;
     return {
       added: ids.length,
+      placed,
+      unassigned: ids.length - placed,
       notSubmitted: prepared.notSubmitted,
       duplicates: prepared.duplicates,
       ids,

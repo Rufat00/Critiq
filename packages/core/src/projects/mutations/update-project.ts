@@ -1,3 +1,4 @@
+import { reassignProjectLocations } from '../lib/reassign-project-locations';
 import { createMutation } from '../../shared/operations';
 import { lockDraft } from '../../hackathon/lib/lock-draft';
 import { updateProjectSchema } from '../schemas/update-project-schema';
@@ -18,12 +19,10 @@ export const updateProject = createMutation({
       input.trackId,
       input.challengeIds,
     );
-    const moved = previous.trackId !== input.trackId;
     const project = await ctx.db.project.update({
       where: { id: previous.id },
       data: {
         ...projectData(input),
-        ...(moved ? { roomId: null, tableNumber: null } : {}),
         challenges: {
           deleteMany: {},
           create: challengeIds.map((challengeId) => ({ challengeId })),
@@ -31,8 +30,12 @@ export const updateProject = createMutation({
       },
       select: { id: true, name: true, trackId: true },
     });
+    const locations = await reassignProjectLocations(ctx);
+    const location = locations.find((item) => item.id === project.id)!;
     return {
       ...project,
+      roomId: location.roomId,
+      tableNumber: location.tableNumber,
       before: {
         name: previous.name,
         description: previous.description,
@@ -54,6 +57,8 @@ export const updateProject = createMutation({
       getAfter: ({ result, input }) => ({
         id: result.id,
         ...projectData(input),
+        roomId: result.roomId,
+        tableNumber: result.tableNumber,
         challengeIds: input.challengeIds,
       }),
     },

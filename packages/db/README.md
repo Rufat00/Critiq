@@ -161,3 +161,33 @@ the hackathon lock, and commit with a before/after audit. Removing a membership
 with existing project challenge entries is rejected so those entries remain
 eligible. Repeating a request does not duplicate membership rows. Both lists and
 the matrix reflect the saved membership after revalidation.
+
+## Automatic project locations
+
+Projects fill active room ranges automatically in Draft. `Project.registrationOrder`
+is a database sequence, so CSV rows retain their insertion order even when their
+creation timestamps match. The migration initializes existing projects by
+`createdAt`, then ID; new projects always receive the next sequence value.
+
+Placement processes projects in registration order, using each track's active
+room links ordered by `sortOrder`, room creation time, and room ID. Within each
+room, table numbers run from lowest to highest across the configured ranges.
+Overlapping definitions remain allowed; a physical room/table slot is used only
+once, with earlier registrations taking precedence across tracks. Projects beyond
+available capacity keep both `roomId` and `tableNumber` null.
+
+Creation, imports, project updates/deletion, range edits, and room activation
+changes recalculate placement under the same Draft lock. Changed locations and
+their audits commit with the initiating operation. Repeating unchanged
+configuration does not write duplicate placement audits. Changes that would move
+a project with judging activity are rejected. Deletion compacts remaining
+projects; moving tracks keeps the project's original registration order.
+
+Room creation and editing save room details and table ranges in one transaction.
+The editor offers track pills and a two-thumb slider. Range coverage is capped
+at projects that are unassigned or already placed in the room being edited;
+overlapping ranges count their union. Numbering may continue above that count
+(for example, 25–101 covers 77 projects). The server rechecks capacity under the
+Draft lock to reject stale form submissions without partial writes. Room rows
+expand inline to show the table layout; occupied tables expose project names
+through hover, focus, or tap tooltips.

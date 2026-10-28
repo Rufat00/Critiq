@@ -134,6 +134,11 @@ export function ProjectsSection({ data }: { data: ProjectsPageData }) {
                       <h3 className="break-words font-semibold">
                         {project.name}
                       </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {project.room && project.tableNumber !== null
+                          ? `${project.room.name} · Table ${project.tableNumber}`
+                          : 'Awaiting an available table range'}
+                      </p>
                       {project.description && (
                         <p className="line-clamp-2 break-words text-sm text-muted-foreground">
                           {project.description}

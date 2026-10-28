@@ -1,3 +1,4 @@
+import { reassignProjectLocations } from '../lib/reassign-project-locations';
 import { createMutation } from '../../shared/operations';
 import { lockDraft } from '../../hackathon/lib/lock-draft';
 import { createProjectSchema } from '../schemas/create-project-schema';
@@ -16,7 +17,7 @@ export const createProject = createMutation({
       input.trackId,
       input.challengeIds,
     );
-    return ctx.db.project.create({
+    const project = await ctx.db.project.create({
       data: {
         ...projectData(input),
         hackathonId,
@@ -26,6 +27,13 @@ export const createProject = createMutation({
       },
       select: { id: true, name: true, trackId: true },
     });
+    const locations = await reassignProjectLocations(ctx);
+    const location = locations.find((item) => item.id === project.id)!;
+    return {
+      ...project,
+      roomId: location.roomId,
+      tableNumber: location.tableNumber,
+    };
   },
   {
     audit: {

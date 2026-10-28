@@ -103,9 +103,7 @@ export function ProjectFormDialog({
         setOpen(false);
         form.reset();
         toast.success(
-          moving
-            ? `${value.name} moved. Location cleared for reassignment.`
-            : `${value.name} ${project ? 'updated' : 'added'}.`,
+          `${value.name} ${moving ? 'moved' : project ? 'updated' : 'added'}. ${result.data.tableNumber !== null ? `Assigned to table ${result.data.tableNumber}.` : 'Awaiting an available table range.'}`,
         );
         router.refresh();
       } catch {
@@ -334,7 +332,8 @@ export function ProjectFormDialog({
                     {project && values.trackId !== project.trackId && (
                       <Alert>
                         <AlertDescription>
-                          Moving a project clears its room and table. Challenges
+                          Moving a project automatically updates its room and
+                          table based on its order in the new track. Challenges
                           unavailable in the new track are removed. Review the
                           selection below before saving.
                         </AlertDescription>

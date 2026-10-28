@@ -302,21 +302,22 @@ model TrackRoomTableRange {
 }
 
 model Project {
-  id             String   @id @default(cuid())
-  hackathonId    String
-  name           String
-  description    String?
-  externalId     String? // Devpost/registration-system identifier.
-  submissionUrl  String?
-  repositoryUrl  String?
-  demoUrl        String?
-  roomId         String?
-  tableNumber    Int?
-  trackId        String // Every project belongs to exactly one track, including Overall.
-  isActive       Boolean  @default(true)
-  isDisqualified Boolean  @default(false)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                String   @id @default(cuid())
+  registrationOrder Int      @unique @default(autoincrement())
+  hackathonId       String
+  name              String
+  description       String?
+  externalId        String? // Devpost/registration-system identifier.
+  submissionUrl     String?
+  repositoryUrl     String?
+  demoUrl           String?
+  roomId            String?
+  tableNumber       Int?
+  trackId           String // Every project belongs to exactly one track, including Overall.
+  isActive          Boolean  @default(true)
+  isDisqualified    Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   hackathon   Hackathon                 @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
   room        Room?                     @relation(fields: [roomId], references: [id], onDelete: SetNull)
@@ -332,6 +333,7 @@ model Project {
   @@unique([hackathonId, externalId])
   @@index([trackId])
   @@index([roomId, tableNumber])
+  @@index([hackathonId, registrationOrder])
   @@index([hackathonId, isActive])
 }
 

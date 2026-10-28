@@ -47,6 +47,7 @@ export const listProjects = createQuery({
           repositoryUrl: true,
           demoUrl: true,
           roomId: true,
+          room: { select: { name: true } },
           tableNumber: true,
           challenges: {
             select: {
