@@ -1,43 +1,33 @@
 'use client';
 
-import type { CSSProperties, ReactNode } from 'react';
-import {
-  SidebarProvider,
-  SidebarInset,
-  SidebarTrigger,
-} from '@/components/ui/sidebar';
+import type { ReactNode } from 'react';
 import { UnsavedGuardProvider } from '@/components/ui/unsaved-guard';
-import { Skeleton } from '@/components/ui/skeleton';
 
 export function AdminFrame({
   navigation,
   children,
-  loading = false,
 }: {
   navigation: ReactNode;
   children: ReactNode;
-  loading?: boolean;
 }) {
   return (
     <UnsavedGuardProvider>
-      <SidebarProvider
-        style={{ '--sidebar-width': '14.5rem' } as CSSProperties}
-      >
+      <div className="min-h-svh bg-background">
+        <a
+          href="#admin-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-4 focus:rounded-full focus:bg-background focus:px-4 focus:py-2 focus:text-primary"
+        >
+          Skip to content
+        </a>
         {navigation}
-        <SidebarInset className="min-w-0">
-          <div className="mx-auto flex w-full max-w-7xl flex-col gap-9 px-4 py-6 md:px-8 md:py-10">
-            {children}
-          </div>
-          {loading ? (
-            <Skeleton className="fixed right-5 bottom-5 size-11 rounded-full md:hidden" />
-          ) : (
-            <SidebarTrigger
-              variant="secondary"
-              className="fixed right-5 bottom-5 shadow-sm"
-            />
-          )}
-        </SidebarInset>
-      </SidebarProvider>
+        <main
+          id="admin-content"
+          tabIndex={-1}
+          className="mx-auto flex w-full max-w-[1200px] min-w-0 flex-col gap-9 px-5 pt-4 pb-16 outline-none md:px-10 md:pt-6 md:pb-20"
+        >
+          {children}
+        </main>
+      </div>
     </UnsavedGuardProvider>
   );
 }
