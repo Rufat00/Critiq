@@ -6,35 +6,36 @@
 :root {
   color-scheme: light;
 
+  /* Coinbase CDS gray spectrum: https://cds.coinbase.com/getting-started/theming/ */
   --background: #ffffff;
-  --foreground: #202020;
+  --foreground: #0a0b0d;
   --card: #ffffff;
-  --card-foreground: #202020;
+  --card-foreground: #0a0b0d;
   --popover: #ffffff;
-  --popover-foreground: #202020;
+  --popover-foreground: #0a0b0d;
 
   --primary: #0000ff;
   --primary-foreground: #ffffff;
-  --secondary: #ebebeb;
-  --secondary-foreground: #202020;
-  --muted: #f7f7f7;
-  /* Slightly darker than the reference's light labels for readability. */
-  --muted-foreground: #707070;
-  --accent: #f7f7f7;
-  --accent-foreground: #202020;
+  --secondary: #eef0f3;
+  --secondary-foreground: #0a0b0d;
+  --muted: #eef0f3;
+  --muted-foreground: #5b616e;
+  --accent: #f7f8f9;
+  --accent-foreground: #0a0b0d;
   --destructive: #d92d42;
   --destructive-foreground: #ffffff;
-  --border: #ededed;
-  --input: #dedede;
+  --border: rgb(91 97 110 / 0.2);
+  /* Stronger than decorative dividers so field boundaries stay visible. */
+  --input: #89909e;
   --ring: #0000ff;
 
   --sidebar: #ffffff;
-  --sidebar-foreground: #707070;
+  --sidebar-foreground: #5b616e;
   --sidebar-primary: #0000ff;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f7f7f7;
-  --sidebar-accent-foreground: #202020;
-  --sidebar-border: #ededed;
+  --sidebar-accent: #f7f8f9;
+  --sidebar-accent-foreground: #0a0b0d;
+  --sidebar-border: rgb(91 97 110 / 0.2);
   --sidebar-ring: #0000ff;
 
   /* Supporting actions use sky blue, rather than the gray secondary. */
@@ -42,10 +43,10 @@
   --soft-foreground: #1717a6;
   --soft-hover: #cceafd;
   --primary-hover: #0000d9;
-  --surface-hover: #f0f0f0;
-  --neutral: #171717;
+  --surface-hover: #dee1e7;
+  --neutral: #0a0b0d;
   --neutral-foreground: #ffffff;
-  --neutral-hover: #303030;
+  --neutral-hover: #32353d;
 
   /* Judging statuses: always pair color with a label/icon. */
   --success: #08754f;
@@ -74,51 +75,50 @@
   --shadow-ui-control: 0 1px 2px rgb(0 0 0 / 0.025);
   --shadow-ui-popover: 0 4px 20px rgb(20 20 40 / 0.08);
   --shadow-ui-dialog: 0 12px 40px rgb(20 20 40 / 0.1);
-  /* Screenshot modal dimming is cool gray. This is an approximation. */
-  --overlay: rgb(27 27 78 / 0.32);
+  --overlay: rgb(50 53 61 / 0.33);
   --motion-fast: 120ms;
   --motion-normal: 180ms;
   --ui-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-/* Optional adaptation. The provided screenshots only establish light mode. */
+/* Matching Coinbase CDS grays for the optional dark theme. */
 .dark {
   color-scheme: dark;
-  --background: #121214;
-  --foreground: #f5f5f5;
-  --card: #18181b;
-  --card-foreground: #f5f5f5;
-  --popover: #1d1d21;
-  --popover-foreground: #f5f5f5;
+  --background: #0a0b0d;
+  --foreground: #ffffff;
+  --card: #141519;
+  --card-foreground: #ffffff;
+  --popover: #1e2025;
+  --popover-foreground: #ffffff;
   --primary: #6464ff;
   --primary-foreground: #ffffff;
-  --secondary: #29292e;
-  --secondary-foreground: #f5f5f5;
-  --muted: #222226;
-  --muted-foreground: #a6a6b0;
-  --accent: #29292e;
-  --accent-foreground: #f5f5f5;
+  --secondary: #282b31;
+  --secondary-foreground: #ffffff;
+  --muted: #141519;
+  --muted-foreground: #a5aab6;
+  --accent: #282b31;
+  --accent-foreground: #ffffff;
   --destructive: #ff7285;
   --destructive-foreground: #271014;
-  --border: #303036;
-  --input: #41414a;
+  --border: #32353d;
+  --input: #727886;
   --ring: #9292ff;
-  --sidebar: #121214;
-  --sidebar-foreground: #a6a6b0;
+  --sidebar: #0a0b0d;
+  --sidebar-foreground: #a5aab6;
   --sidebar-primary: #6464ff;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #222226;
-  --sidebar-accent-foreground: #f5f5f5;
-  --sidebar-border: #303036;
+  --sidebar-accent: #141519;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #32353d;
   --sidebar-ring: #9292ff;
   --soft: #182e42;
   --soft-foreground: #a6d9ff;
   --soft-hover: #203c56;
   --primary-hover: #7373ff;
-  --surface-hover: #303036;
-  --neutral: #f5f5f5;
-  --neutral-foreground: #171717;
-  --neutral-hover: #dedede;
+  --surface-hover: #32353d;
+  --neutral: #ffffff;
+  --neutral-foreground: #0a0b0d;
+  --neutral-hover: #e0e2e7;
   --success: #6ed9ad;
   --success-subtle: #142f25;
   --warning: #f5ca7a;

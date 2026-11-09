@@ -127,7 +127,7 @@ a configured development installation.
 
 Web uses Tailwind CSS v4 and local shadcn New York/Radix component source.
 `apps/web/components.json` enables CSS variables and maps the class helper to
-`@/lib/cn`. The supplied Base-inspired palette lives in
+`@/lib/cn`. The palette combines Critiq blue with Coinbase CDS cool grays and lives in
 `apps/web/src/app/globals.css`, imported once by the root layout. Geist is
 self-hosted through the `geist` package, so builds do not fetch Google Fonts.
 Light mode is the default; dark tokens are available without a theme toggle.
