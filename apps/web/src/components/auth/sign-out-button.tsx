@@ -33,7 +33,7 @@ export function SignOutButton({
           }
         }}
       >
-        Sign out
+        Log out
       </LoadingButton>
       {error && (
         <p role="alert" className="text-sm text-destructive">

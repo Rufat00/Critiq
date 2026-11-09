@@ -21,13 +21,12 @@ import { Logo } from '@/components/logo';
 import { SignOutButton } from '@/components/auth/sign-out-button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { getStageNavigation, stageLabels } from '../lib/stage-navigation';
+import { getStageNavigation } from '../lib/stage-navigation';
 import { AdminFrame } from './admin-frame';
 
 const mainItems = {
@@ -84,9 +83,15 @@ function AdminNavigation({
       <Link
         href="/admin"
         aria-label="Critiq home"
-        className="w-fit rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+        className="flex min-w-0 w-fit flex-col items-start gap-1.5 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
       >
         <Logo className="h-7 md:h-8" />
+        <span
+          className="w-full max-w-44 truncate text-sm font-medium text-muted-foreground xl:max-w-52"
+          title={summary.name ?? 'Your hackathon'}
+        >
+          {summary.name ?? 'Your hackathon'}
+        </span>
       </Link>
       <nav
         aria-label="Admin navigation"
@@ -126,41 +131,31 @@ function AdminNavigation({
           })}
         </ul>
       </nav>
-      <div className="col-start-2 row-start-1 justify-self-end xl:col-start-3">
+      <div className="col-start-2 row-start-1 min-w-0 justify-self-end xl:col-start-3">
         <Popover>
           <PopoverTrigger asChild>
             <Button
-              variant="ghost"
+              variant="secondary"
+              size="lg"
               aria-label={`Account for ${userName}`}
-              className="gap-2 px-2"
+              className="max-w-full gap-2 pr-3 pl-1"
             >
-              <Avatar aria-hidden="true">
+              <Avatar size="lg" aria-hidden="true">
                 <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
+              <span className="hidden max-w-32 truncate sm:block xl:max-w-24 2xl:max-w-40">
+                {userName}
+              </span>
               <RiArrowDownSLine aria-hidden="true" data-icon="inline-end" />
             </Button>
           </PopoverTrigger>
           <PopoverContent
             align="end"
             sideOffset={12}
-            className="max-w-[calc(100vw-2.5rem)] p-4"
+            className="w-44 max-w-[calc(100vw-2.5rem)] p-2"
             aria-label="Your account"
           >
-            <div className="flex flex-col gap-4">
-              <div className="flex min-w-0 flex-col gap-1">
-                <p className="truncate text-sm font-semibold" title={userName}>
-                  {userName}
-                </p>
-                <p
-                  className="truncate text-sm text-muted-foreground"
-                  title={summary.name ?? 'Your hackathon'}
-                >
-                  {summary.name ?? 'Your hackathon'}
-                </p>
-              </div>
-              <Badge className="w-fit">{stageLabels[summary.status]}</Badge>
-              <SignOutButton variant="secondary" size="sm" />
-            </div>
+            <SignOutButton size="sm" />
           </PopoverContent>
         </Popover>
       </div>
