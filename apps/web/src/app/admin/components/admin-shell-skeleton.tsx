@@ -1,56 +1,29 @@
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Sidebar,
-  SidebarHeader,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-} from '@/components/ui/sidebar';
 import { AdminFrame } from './admin-frame';
 import { AdminHomeSkeleton } from '../(Home)/components/admin-home-skeleton';
 
 export function AdminShellSkeleton() {
   return (
     <AdminFrame
-      loading
       navigation={
-        <Sidebar>
-          <div aria-hidden="true" className="flex min-h-0 flex-1 flex-col">
-            <SidebarHeader className="px-6 pt-7 pb-6">
-              <Skeleton className="h-8 w-28" />
-              <Skeleton className="mt-3 h-6 w-full" />
-              <Skeleton className="h-6 w-2/3" />
-            </SidebarHeader>
-            <SidebarContent className="gap-0">
-              <SidebarGroup className="gap-1">
-                {[0, 1, 2, 3, 4, 5].map((item) => (
-                  <div key={item} className="flex h-12 items-center gap-3 px-3">
-                    <Skeleton className="size-5 shrink-0" />
-                    <Skeleton className="h-5 w-24" />
-                  </div>
-                ))}
-              </SidebarGroup>
-            </SidebarContent>
-            <SidebarFooter className="gap-4 px-3 pb-6">
-              <div className="flex flex-col gap-3 rounded-2xl border p-3">
-                <Skeleton className="h-5 w-full" />
-                <div className="flex justify-between gap-3">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-4 w-8" />
-                </div>
-                <Skeleton className="h-2 w-full rounded-full" />
-                <Skeleton className="h-11 w-full rounded-full md:h-9" />
-              </div>
-              <div className="flex flex-col gap-3 rounded-2xl border p-3">
-                <div className="flex items-center gap-3">
-                  <Skeleton className="size-8 shrink-0 rounded-full" />
-                  <Skeleton className="h-4 w-20" />
-                </div>
-                <Skeleton className="h-11 w-full rounded-full md:h-9" />
-              </div>
-            </SidebarFooter>
+        <header
+          aria-label="Loading navigation"
+          aria-busy="true"
+          className="mx-auto grid w-full max-w-[1440px] grid-cols-[1fr_auto] items-center gap-x-6 gap-y-5 px-5 pt-6 pb-2 md:px-10 xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] xl:py-6"
+        >
+          <Skeleton className="h-8 w-24" />
+          <div
+            aria-hidden="true"
+            className="col-span-2 row-start-2 min-w-0 overflow-hidden py-1 xl:col-span-1 xl:col-start-2 xl:row-start-1"
+          >
+            <div className="mx-auto flex w-max gap-1 rounded-full bg-muted p-1">
+              {[0, 1, 2, 3, 4, 5].map((item) => (
+                <Skeleton key={item} className="h-10 w-24 rounded-full" />
+              ))}
+            </div>
           </div>
-        </Sidebar>
+          <Skeleton className="col-start-2 row-start-1 h-10 w-16 rounded-full justify-self-end xl:col-start-3" />
+        </header>
       }
     >
       <AdminHomeSkeleton />
