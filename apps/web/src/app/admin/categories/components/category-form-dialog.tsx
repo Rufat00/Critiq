@@ -310,15 +310,25 @@ export function CategoryFormDialog({
             advance();
           }}
         >
-          <DialogBody className="flex min-h-0 flex-1 flex-col overflow-y-auto pt-14 sm:px-10 sm:pt-14">
+          <DialogBody
+            className={cn(
+              'flex min-h-0 flex-1 flex-col pt-14 sm:px-10 sm:pt-14',
+              editing ? 'overflow-hidden' : 'overflow-y-auto',
+            )}
+          >
             <div
               className={cn(
-                'my-auto flex w-full shrink-0 flex-col gap-6',
+                'flex w-full flex-col gap-6',
+                editing ? 'min-h-0 flex-1' : 'my-auto shrink-0',
                 !editing && screen === 'details' && 'mx-auto max-w-2xl',
               )}
             >
-              <DialogTitle ref={heading} tabIndex={-1} className="outline-none">
-                {title}
+              <DialogTitle
+                ref={heading}
+                tabIndex={-1}
+                className={cn('outline-none', editing && 'sr-only')}
+              >
+                {editing ? `Edit ${kind}` : title}
               </DialogTitle>
               <FormTabs
                 editing={editing}
@@ -326,7 +336,7 @@ export function CategoryFormDialog({
                 onScreenChange={setScreen}
               >
                 {editing && (
-                  <TabsList aria-label={`Edit ${kind}`}>
+                  <TabsList className="shrink-0" aria-label={`Edit ${kind}`}>
                     <TabsTrigger value="details" disabled={pending}>
                       Details
                     </TabsTrigger>
@@ -405,6 +415,9 @@ export function CategoryFormDialog({
                   </FieldGroup>
                 </FormPanel>
                 <FormPanel editing={editing} screen={screen} value="method">
+                  {editing && (
+                    <h2 className="mb-6 text-lg font-medium">{title}</h2>
+                  )}
                   <div className="grid items-start gap-6 md:grid-cols-[minmax(0,1fr)_240px] xl:grid-cols-[minmax(0,1fr)_280px]">
                     <FieldGroup>
                       <form.Field name="method">
@@ -655,6 +668,9 @@ export function CategoryFormDialog({
                   </div>
                 </FormPanel>
                 <FormPanel editing={editing} screen={screen} value="membership">
+                  {editing && (
+                    <h2 className="mb-6 text-lg font-medium">{title}</h2>
+                  )}
                   <FieldSet disabled={pending} className="gap-5">
                     <FieldLegend className="sr-only">
                       {kind === 'challenge'
@@ -819,7 +835,7 @@ function FormTabs({
     <Tabs
       value={screen}
       onValueChange={(value) => onScreenChange(value as Screen)}
-      className="gap-6"
+      className="min-h-0 flex-1 gap-6"
     >
       {children}
     </Tabs>
@@ -840,7 +856,12 @@ function FormPanel({
   children: ReactNode;
 }) {
   return editing ? (
-    <TabsContent value={value}>{children}</TabsContent>
+    <TabsContent
+      value={value}
+      className="min-h-0 overflow-y-auto overscroll-contain pb-1"
+    >
+      {children}
+    </TabsContent>
   ) : screen === value ? (
     <>{children}</>
   ) : null;

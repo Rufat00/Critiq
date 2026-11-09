@@ -220,14 +220,24 @@ function RoomConfigurationForm({
         else void form.handleSubmit();
       }}
     >
-      <DialogBody className="flex min-h-0 flex-1 flex-col overflow-y-auto pt-14 sm:px-10 sm:pt-14">
+      <DialogBody
+        className={cn(
+          'flex min-h-0 flex-1 flex-col pt-14 sm:px-10 sm:pt-14',
+          editing ? 'overflow-hidden' : 'overflow-y-auto',
+        )}
+      >
         <div
           className={cn(
-            'my-auto flex w-full shrink-0 flex-col gap-6',
-            screen === 'details' && 'mx-auto max-w-2xl',
+            'flex w-full flex-col gap-6',
+            editing ? 'min-h-0 flex-1' : 'my-auto shrink-0',
+            !editing && screen === 'details' && 'mx-auto max-w-2xl',
           )}
         >
-          <DialogTitle ref={heading} tabIndex={-1} className="outline-none">
+          <DialogTitle
+            ref={heading}
+            tabIndex={-1}
+            className={cn('outline-none', editing && 'sr-only')}
+          >
             {editing
               ? 'Edit room'
               : screen === 'details'
@@ -240,7 +250,7 @@ function RoomConfigurationForm({
             onScreenChange={setScreen}
           >
             {editing && (
-              <TabsList aria-label="Edit room">
+              <TabsList className="shrink-0" aria-label="Edit room">
                 <TabsTrigger value="details" disabled={pending}>
                   Details
                 </TabsTrigger>
@@ -414,7 +424,7 @@ function RoomFormPanels({
     <Tabs
       value={screen}
       onValueChange={(value) => onScreenChange(value as 'details' | 'ranges')}
-      className="gap-6"
+      className="min-h-0 flex-1 gap-6"
     >
       {children}
     </Tabs>
@@ -437,7 +447,7 @@ function RoomFormPanel({
     <TabsContent
       value={value}
       forceMount
-      className="data-[state=inactive]:hidden"
+      className="min-h-0 overflow-y-auto overscroll-contain pb-1 data-[state=inactive]:hidden"
     >
       {children}
     </TabsContent>

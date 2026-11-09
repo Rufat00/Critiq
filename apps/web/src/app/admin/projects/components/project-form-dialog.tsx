@@ -37,6 +37,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/sonner';
 import { useUnsavedGuard } from '@/components/ui/unsaved-guard';
+import { cn } from '@/lib/utils';
 import { CategorySelectionPill } from '../../categories/components/category-selection-pill';
 import { createProjectAction, updateProjectAction } from '../actions';
 
@@ -133,6 +134,7 @@ export function ProjectFormDialog({
   const eligible = categories.challenges.filter(
     (c) => c.challengeId && selected && c.trackIds.includes(selected.id),
   );
+  const editing = Boolean(project) && !moving;
   const details = !moving && screen === 'details';
   useEffect(() => {
     if (!open) return;
@@ -158,37 +160,49 @@ export function ProjectFormDialog({
     >
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent
-        className="max-w-2xl"
+        className={cn(
+          'max-w-2xl',
+          editing &&
+            'flex h-[min(38rem,calc(100dvh-2rem))] flex-col overflow-hidden',
+        )}
         aria-describedby={undefined}
         showCloseButton={!pending}
       >
         <form
+          className={cn(editing && 'flex min-h-0 flex-1 flex-col')}
           onSubmit={(event) => {
             event.preventDefault();
             void form.handleSubmit();
           }}
         >
-          <DialogHeader>
-            <DialogTitle>
-              {moving
-                ? `Move ${project?.name}`
-                : project
-                  ? 'Edit project'
-                  : 'Add project'}
-            </DialogTitle>
-          </DialogHeader>
-          <DialogBody>
+          {editing ? (
+            <DialogTitle className="sr-only">Edit project</DialogTitle>
+          ) : (
+            <DialogHeader>
+              <DialogTitle>
+                {moving ? `Move ${project?.name}` : 'Add project'}
+              </DialogTitle>
+            </DialogHeader>
+          )}
+          <DialogBody
+            className={cn(
+              editing &&
+                'flex min-h-0 flex-1 flex-col overflow-hidden pt-14 sm:px-10 sm:pt-14',
+            )}
+          >
             <Tabs
               value={screen}
               onValueChange={(value) => {
                 if (!pending) setScreen(value as typeof screen);
               }}
-              className="gap-6"
+              className={cn('gap-6', editing && 'min-h-0 flex-1')}
             >
               {project && !moving && (
-                <TabsList aria-label="Project details">
-                  <TabsTrigger value="details">Details</TabsTrigger>
-                  <TabsTrigger value="membership">
+                <TabsList className="shrink-0" aria-label="Project details">
+                  <TabsTrigger value="details" disabled={pending}>
+                    Details
+                  </TabsTrigger>
+                  <TabsTrigger value="membership" disabled={pending}>
                     Track & challenges
                   </TabsTrigger>
                 </TabsList>
@@ -201,7 +215,12 @@ export function ProjectFormDialog({
                     : '2 of 2 · Track & challenges'}
                 </p>
               )}
-              <TabsContent value={screen}>
+              <TabsContent
+                value={screen}
+                className={cn(
+                  editing && 'min-h-0 overflow-y-auto overscroll-contain pb-1',
+                )}
+              >
                 {details ? (
                   <FieldGroup>
                     {(
@@ -392,7 +411,12 @@ export function ProjectFormDialog({
               )}
             </Tabs>
           </DialogBody>
-          <DialogFooter className="sm:justify-between">
+          <DialogFooter
+            className={cn(
+              'shrink-0 sm:justify-between',
+              editing && 'sm:px-10 sm:py-4',
+            )}
+          >
             <div className="flex gap-2">
               {!project && !details && (
                 <Button
