@@ -43,6 +43,20 @@ export function CategoryTabs({
           </AlertDescription>
         </Alert>
       )}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <CategoryFormDialog
+          categories={categories}
+          kind="track"
+          locked={status !== 'DRAFT'}
+          onSaved={toast.success}
+        />
+        <CategoryFormDialog
+          categories={categories}
+          kind="challenge"
+          locked={status !== 'DRAFT'}
+          onSaved={toast.success}
+        />
+      </div>
       <Tabs defaultValue="tracks" className="gap-6">
         <TabsList aria-label="Category views">
           <TabsTrigger value="tracks">
@@ -60,23 +74,10 @@ export function CategoryTabs({
         </TabsList>
         <TabsContent value="tracks">
           <section className="flex flex-col gap-5">
-            <header className="flex flex-col gap-2">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="text-base font-semibold leading-snug tracking-tight">
-                  Tracks
-                </h2>
-                <CategoryFormDialog
-                  categories={categories}
-                  kind="track"
-                  locked={status !== 'DRAFT'}
-                  onSaved={toast.success}
-                />
-              </div>
-            </header>
             <div className="flex flex-col gap-3">
               <div
                 aria-hidden="true"
-                className="hidden grid-cols-[minmax(0,1fr)_100px_150px_70px_44px] items-center gap-4 px-4 pb-1 text-xs text-muted-foreground xl:grid"
+                className="hidden grid-cols-[minmax(0,1fr)_100px_minmax(0,1.5fr)_56px_44px] items-center gap-4 px-4 pb-1 text-xs text-muted-foreground xl:grid"
               >
                 <span>Track</span>
                 <span>Method</span>
@@ -92,22 +93,28 @@ export function CategoryTabs({
                   <article
                     key={track.id}
                     aria-label={track.name}
-                    className="grid min-w-0 grid-cols-[minmax(0,1fr)_44px] items-center gap-4 rounded-xl border border-border p-4 xl:grid-cols-[minmax(0,1fr)_100px_150px_70px_44px]"
+                    className="grid min-w-0 grid-cols-[minmax(0,1fr)_44px] items-center gap-4 rounded-xl border border-border p-4 xl:grid-cols-[minmax(0,1fr)_100px_minmax(0,1.5fr)_56px_44px]"
                   >
                     <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="break-words text-sm font-semibold">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <h3
+                          className="truncate text-sm font-semibold"
+                          title={track.name}
+                        >
                           {track.name}
                         </h3>
                         {track.isOverall && (
-                          <Badge>
+                          <Badge className="shrink-0">
                             <RiLockLine className="size-3" />
                             Default
                           </Badge>
                         )}
                       </div>
                       {track.description && (
-                        <p className="mt-1 break-words text-sm text-muted-foreground">
+                        <p
+                          className="mt-1 truncate text-sm text-muted-foreground"
+                          title={track.description}
+                        >
                           {track.description}
                         </p>
                       )}
@@ -168,23 +175,10 @@ export function CategoryTabs({
         </TabsContent>
         <TabsContent value="challenges">
           <section className="flex flex-col gap-5">
-            <header className="flex flex-col gap-2">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="text-base font-semibold leading-snug tracking-tight">
-                  Challenges
-                </h2>
-                <CategoryFormDialog
-                  categories={categories}
-                  kind="challenge"
-                  locked={status !== 'DRAFT'}
-                  onSaved={toast.success}
-                />
-              </div>
-            </header>
             <div className="flex flex-col gap-3">
               <div
                 aria-hidden="true"
-                className="hidden grid-cols-[minmax(0,1fr)_100px_150px_70px_44px] items-center gap-4 px-4 pb-1 text-xs text-muted-foreground xl:grid"
+                className="hidden grid-cols-[minmax(0,1fr)_100px_minmax(0,1.5fr)_56px_44px] items-center gap-4 px-4 pb-1 text-xs text-muted-foreground xl:grid"
               >
                 <span>Challenge</span>
                 <span>Method</span>
@@ -196,14 +190,20 @@ export function CategoryTabs({
                 <article
                   key={challenge.id}
                   aria-label={challenge.name}
-                  className="grid min-w-0 grid-cols-[minmax(0,1fr)_44px] items-center gap-4 rounded-xl border border-border p-4 xl:grid-cols-[minmax(0,1fr)_100px_150px_70px_44px]"
+                  className="grid min-w-0 grid-cols-[minmax(0,1fr)_44px] items-center gap-4 rounded-xl border border-border p-4 xl:grid-cols-[minmax(0,1fr)_100px_minmax(0,1.5fr)_56px_44px]"
                 >
                   <div className="min-w-0">
-                    <h3 className="break-words text-sm font-semibold">
+                    <h3
+                      className="truncate text-sm font-semibold"
+                      title={challenge.name}
+                    >
                       {challenge.name}
                     </h3>
                     {challenge.description && (
-                      <p className="mt-1 break-words text-sm text-muted-foreground">
+                      <p
+                        className="mt-1 truncate text-sm text-muted-foreground"
+                        title={challenge.description}
+                      >
                         {challenge.description}
                       </p>
                     )}
@@ -265,17 +265,6 @@ export function CategoryTabs({
         <TabsContent value="matrix">
           <section className="flex flex-col gap-5">
             <header className="flex flex-col gap-2">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="text-base font-semibold leading-snug tracking-tight">
-                  Challenge matrix
-                </h2>
-                <CategoryFormDialog
-                  categories={categories}
-                  kind="challenge"
-                  locked={status !== 'DRAFT'}
-                  onSaved={toast.success}
-                />
-              </div>
               <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5">
                   <Membership included />

@@ -8,6 +8,11 @@ export default function Loading() {
       <div role="status" aria-label="Loading categories" aria-busy="true">
         <span className="sr-only">Loading categories…</span>
         <div aria-hidden="true" className="flex flex-col gap-6">
+          <div className="grid gap-3 sm:grid-cols-2">
+            {[1, 2].map((action) => (
+              <Skeleton key={action} className="h-24 rounded-2xl" />
+            ))}
+          </div>
           <div className="flex gap-6 overflow-hidden border-b border-border pt-2 pb-3">
             {[1, 2, 3].map((tab) => (
               <div key={tab} className="flex shrink-0 items-center gap-1.5">
@@ -18,16 +23,8 @@ export default function Loading() {
             ))}
           </div>
           <section className="flex flex-col gap-5">
-            <header className="flex flex-col gap-2">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="text-base font-semibold leading-snug tracking-tight">
-                  Tracks
-                </h2>
-                <Skeleton className="h-8 w-28 rounded-lg" />
-              </div>
-            </header>
             <div className="flex flex-col gap-3">
-              <div className="hidden grid-cols-[minmax(0,1fr)_100px_150px_70px_44px] items-center gap-4 px-4 pb-1 text-xs text-muted-foreground xl:grid">
+              <div className="hidden grid-cols-[minmax(0,1fr)_100px_minmax(0,1.5fr)_56px_44px] items-center gap-4 px-4 pb-1 text-xs text-muted-foreground xl:grid">
                 <span>Track</span>
                 <span>Method</span>
                 <span>Challenges</span>
@@ -37,7 +34,7 @@ export default function Loading() {
               {[1, 2, 3].map((row) => (
                 <div
                   key={row}
-                  className="grid min-w-0 grid-cols-[minmax(0,1fr)_44px] items-center gap-4 rounded-xl border border-border p-4 xl:grid-cols-[minmax(0,1fr)_100px_150px_70px_44px]"
+                  className="grid min-w-0 grid-cols-[minmax(0,1fr)_44px] items-center gap-4 rounded-xl border border-border p-4 xl:grid-cols-[minmax(0,1fr)_100px_minmax(0,1.5fr)_56px_44px]"
                 >
                   <div className="flex min-w-0 flex-col gap-2">
                     <Skeleton className="h-5 w-32 max-w-full" />

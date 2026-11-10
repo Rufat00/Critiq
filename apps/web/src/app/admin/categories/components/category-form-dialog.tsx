@@ -12,6 +12,7 @@ import {
 import type { JudgingCategories } from '@critiq/core/categories';
 import { judgingMethodLabels, rubricWeightOptions } from '@critiq/constants';
 import { Button, LoadingButton } from '@/components/ui/button';
+import { ActionTile } from '@/components/action-tile';
 import {
   Dialog,
   DialogTrigger,
@@ -279,10 +280,9 @@ export function CategoryFormDialog({
     >
       {!editing && (
         <DialogTrigger asChild>
-          <Button type="button" size="sm" disabled={locked}>
-            <RiAddLine data-icon="inline-start" />
+          <ActionTile icon={<RiAddLine />} disabled={locked}>
             Create {kind}
-          </Button>
+          </ActionTile>
         </DialogTrigger>
       )}
       <DialogContent
