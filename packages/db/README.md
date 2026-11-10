@@ -186,8 +186,10 @@ projects; moving tracks keeps the project's original registration order.
 Room creation and editing save room details and table ranges in one transaction.
 The editor offers track pills and a two-thumb slider. Range coverage is capped
 at projects that are unassigned or already placed in the room being edited;
-overlapping ranges count their union. Numbering may continue above that count
+table ranges in a room cannot overlap, within or across tracks. Numbering may continue above that count
 (for example, 25–101 covers 77 projects). The server rechecks capacity under the
 Draft lock to reject stale form submissions without partial writes. Room rows
 expand inline to show the table layout; occupied tables expose project names
 through hover, focus, or tap tooltips.
+The preview shows only configured tables, with the total equal to the combined
+range sizes. It has no fixed table count; large layouts use pagination.

@@ -13,6 +13,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { getTableRangePreview } from '../lib/get-table-range-preview';
 const colors = [
   'var(--chart-1)',
   'var(--chart-2)',
@@ -43,56 +44,29 @@ export function TableRangePreview({
         r.toNumber <= 2147483647,
     ),
   }));
-  const max = Math.max(
-    24,
-    ...valid.flatMap((t) => t.ranges.map((r) => r.toNumber)),
-  );
-  const current = Math.min(page, Math.floor((max - 1) / 100));
-  const first = current * 100 + 1,
-    last = Math.min(first + 99, max);
+  const { total, current, offset, tables } = getTableRangePreview(valid, page);
   return (
     <TooltipProvider>
       <section className="flex flex-col gap-3" aria-label="Table range preview">
         <header className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-sm font-medium">{title}</h3>
-          <span className="text-xs text-muted-foreground">
-            Tables {first}–{last}
-          </span>
+          <span className="text-xs text-muted-foreground">{total} tables</span>
         </header>
         <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-10">
-          {Array.from({ length: last - first + 1 }, (_, i) => {
-            const table = first + i;
-            const matching = valid
-              .map((t, index) => ({ ...t, index }))
-              .filter((t) =>
-                t.ranges.some(
-                  (r) => r.fromNumber <= table && table <= r.toNumber,
-                ),
-              );
-            const names = matching.map(
-              (t) =>
-                options.find((o) => o.id === t.trackId)?.category.name ??
-                'Track',
-            );
-            const color = matching.length
-              ? colors[matching[0]!.index % colors.length]
-              : undefined;
-            const background =
-              matching.length > 1
-                ? `linear-gradient(135deg, ${matching.map((t, index) => `color-mix(in srgb, ${colors[t.index % colors.length]} 18%, var(--background)) ${(index * 100) / matching.length}% ${((index + 1) * 100) / matching.length}%`).join(', ')})`
-                : color
-                  ? `color-mix(in srgb, ${color} 14%, var(--background))`
-                  : undefined;
+          {tables.map(({ table, trackId, index }) => {
+            const name =
+              options.find((option) => option.id === trackId)?.category.name ??
+              'Track';
+            const color = colors[index % colors.length]!;
+            const background = `color-mix(in srgb, ${color} 14%, var(--background))`;
             const project = projects?.find(
               (item) => item.tableNumber === table,
             );
             const hint = project
               ? project.name
               : projects
-                ? matching.length
-                  ? 'Unassigned table'
-                  : 'Not configured'
-                : names.join(', ') || 'Not configured';
+                ? 'Unassigned table'
+                : name;
             return (
               <TableTooltip
                 key={table}
@@ -103,7 +77,8 @@ export function TableRangePreview({
                   type="button"
                   className={cn(
                     'flex h-9 min-w-0 items-center justify-center rounded-md border px-1 text-xs tabular-nums',
-                    (!matching.length || (projects && !project)) &&
+                    projects &&
+                      !project &&
                       'border-dashed text-muted-foreground',
                   )}
                   style={{
@@ -113,10 +88,7 @@ export function TableRangePreview({
                       : undefined,
                   }}
                 >
-                  <span className="truncate">
-                    {table}
-                    {matching.length > 1 ? '*' : ''}
-                  </span>
+                  <span className="truncate">{table}</span>
                 </button>
               </TableTooltip>
             );
@@ -133,28 +105,8 @@ export function TableRangePreview({
                 'Track'}
             </span>
           ))}
-          <span className="inline-flex items-center gap-1.5">
-            <span className="size-2.5 rounded-sm border border-dashed border-muted-foreground" />
-            Not configured
-          </span>
         </div>
-        {valid.some((track, i) =>
-          valid
-            .slice(i + 1)
-            .some((other) =>
-              track.ranges.some((a) =>
-                other.ranges.some(
-                  (b) =>
-                    a.fromNumber <= b.toNumber && b.fromNumber <= a.toNumber,
-                ),
-              ),
-            ),
-        ) && (
-          <p className="text-xs text-muted-foreground">
-            * Shared by multiple tracks.
-          </p>
-        )}
-        {max > 100 && (
+        {total > 100 && (
           <div className="flex justify-end gap-2">
             <Button
               type="button"
@@ -169,7 +121,7 @@ export function TableRangePreview({
               type="button"
               variant="ghost"
               size="sm"
-              disabled={last >= max}
+              disabled={offset + tables.length >= total}
               onClick={() => setPage(current + 1)}
             >
               Next tables

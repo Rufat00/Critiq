@@ -28,6 +28,28 @@ export const setRoomTrackAccessSchema = z.object({
     .refine(
       (tracks) => new Set(tracks.map((t) => t.trackId)).size === tracks.length,
       'Each track must appear once.',
-    ),
+    )
+    .superRefine((tracks, ctx) => {
+      const ranges = tracks
+        .flatMap((track, trackIndex) =>
+          track.ranges.map((range, rangeIndex) => ({
+            ...range,
+            trackIndex,
+            rangeIndex,
+          })),
+        )
+        .sort((a, b) => a.fromNumber - b.fromNumber);
+      let end = 0;
+      for (const range of ranges) {
+        if (range.fromNumber <= end)
+          ctx.addIssue({
+            code: 'custom',
+            message:
+              'Table ranges in a room must not overlap. Each table belongs to one track.',
+            path: [range.trackIndex, 'ranges', range.rangeIndex, 'fromNumber'],
+          });
+        end = Math.max(end, range.toNumber);
+      }
+    }),
 });
 export type SetRoomTrackAccessInput = z.input<typeof setRoomTrackAccessSchema>;

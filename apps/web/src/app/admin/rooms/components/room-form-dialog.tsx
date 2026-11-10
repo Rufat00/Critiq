@@ -152,7 +152,6 @@ function RoomConfigurationForm({
     router = useRouter(),
     heading = useRef<HTMLHeadingElement>(null);
   const [screen, setScreen] = useState<'details' | 'ranges'>('details'),
-    [draft, setDraft] = useState(false),
     [error, setError] = useState(''),
     [errors, setErrors] = useState<AppFieldErrors>({});
   const editing = !!data.room;
@@ -169,7 +168,7 @@ function RoomConfigurationForm({
   const form = useForm({
     defaultValues: initial,
     onSubmit: async ({ value }) => {
-      if (locked || draft) return;
+      if (locked) return;
       setError('');
       setErrors({});
       onPendingChange(true);
@@ -206,7 +205,7 @@ function RoomConfigurationForm({
   const values = useStore(form.store, (s) => s.values),
     pending = useStore(form.store, (s) => s.isSubmitting);
   const dirty = JSON.stringify(values) !== JSON.stringify(initial);
-  useUnsavedGuard({ when: dirty || draft });
+  useUnsavedGuard({ when: dirty });
   function changeScreen(next: 'details' | 'ranges') {
     setScreen(next);
     requestAnimationFrame(() => heading.current?.focus());
@@ -350,7 +349,6 @@ function RoomConfigurationForm({
                     options={data.tracks}
                     disabled={locked || pending}
                     errors={errors}
-                    onDraftChange={setDraft}
                   />
                 )}
               </form.Field>
@@ -397,9 +395,7 @@ function RoomConfigurationForm({
           <LoadingButton
             type="submit"
             loading={pending}
-            disabled={
-              locked || draft || !values.name.trim() || (editing && !dirty)
-            }
+            disabled={locked || !values.name.trim() || (editing && !dirty)}
           >
             {editing ? 'Save changes' : 'Create room'}
           </LoadingButton>

@@ -234,7 +234,7 @@ const access = {
         { fromNumber: 20, toNumber: 22 },
       ],
     },
-    { trackId: 'track-b', ranges: [{ fromNumber: 5, toNumber: 10 }] },
+    { trackId: 'track-b', ranges: [{ fromNumber: 30, toNumber: 35 }] },
   ],
 };
 test('room creation and edits trim values, preserve scope, toggle status and audit', async () => {
@@ -314,10 +314,10 @@ test('configuration writes reject non-draft stages and foreign room/track IDs', 
   );
   assert.equal(f.read().audits.length, 0);
 });
-test('ranges support gaps, overlaps within/across tracks, and access without ranges while preserving rotation metadata', async () => {
+test('ranges support gaps and access without ranges while preserving rotation metadata', async () => {
   const f = fixture();
   const input = structuredClone(access);
-  input.tracks[0]!.ranges.push({ fromNumber: 3, toNumber: 10 });
+  input.tracks[0]!.ranges.push({ fromNumber: 12, toNumber: 15 });
   await setRoomTrackAccess(f.ctx, input);
   assert.equal(f.read().ranges.length, 4);
   assert.equal(f.read().links[0]!.sortOrder, 7);
@@ -331,6 +331,29 @@ test('ranges support gaps, overlaps within/across tracks, and access without ran
   await setRoomTrackAccess(f.ctx, { roomId: 'room', tracks: [] });
   assert.equal(f.read().links.length, 0);
   assert.equal(f.read().audits.length, 3);
+});
+test('overlapping table ranges within or across tracks are rejected without writing', async () => {
+  for (const sameTrack of [true, false]) {
+    const f = fixture();
+    const before = structuredClone(f.read());
+    const ranges = [
+      { fromNumber: 1, toNumber: 8 },
+      { fromNumber: 8, toNumber: 12 },
+    ];
+    await rejects(
+      setRoomTrackAccess(f.ctx, {
+        roomId: 'room',
+        tracks: sameTrack
+          ? [{ trackId: 'track-a', ranges }]
+          : [
+              { trackId: 'track-a', ranges: [ranges[0]!] },
+              { trackId: 'track-b', ranges: [ranges[1]!] },
+            ],
+      }),
+      'VALIDATION_ERROR',
+    );
+    assert.deepEqual(f.read(), before);
+  }
 });
 test('invalid numbers, reversed ranges and exact duplicates fail validation without writing', async () => {
   const f = fixture();

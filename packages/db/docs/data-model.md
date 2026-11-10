@@ -8,7 +8,7 @@
 - One installation row (`id = 1`), one hackathon per deployment, and exactly one Overall category; enforce with a seed/transaction and SQL constraints where appropriate.
 - Category `kind` must match subtype: OVERALL and TRACK each have one Track row; CHALLENGE has one Challenge row. Deferred SQL triggers enforce subtype completeness and same-hackathon ownership at commit.
 - Track, project, challenge and room must all belong to the same hackathon; cross-table multi-hop invariants require service validation or composite foreign keys.
-- TrackRoomTableRange bounds must be nonnegative and `fromNumber <= toNumber`; validate no overlap across different tracks sharing the same room when necessary.
+- TrackRoomTableRange bounds must be positive and `fromNumber <= toNumber`; ranges within a room must not overlap, within or across tracks.
 - Automatic physical placement fills active room ranges in database `registrationOrder`, with no duplicate room/table slots; capacity overflow remains unassigned.
 - Every project has a non-null `trackId`. Eligibility for a track, including Overall, compares that ID directly. Tracks with projects cannot be deleted; move the projects first.
 - Challenge eligibility and `ProjectChallenge` opt-in must be checked when selecting projects.
