@@ -140,7 +140,11 @@ function AdminNavigation({
               aria-label={`Account for ${userName}`}
               className="max-w-full gap-2 pr-3 pl-1"
             >
-              <Avatar size="lg" aria-hidden="true">
+              <Avatar
+                size="lg"
+                className="border border-input"
+                aria-hidden="true"
+              >
                 <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
               <span className="hidden max-w-32 truncate sm:block xl:max-w-24 2xl:max-w-40">
