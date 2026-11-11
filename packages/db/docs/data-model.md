@@ -1,6 +1,6 @@
 # Critiq data model — first implementation draft
 
-`schema.prisma` targets PostgreSQL, Prisma, and Better Auth. `JudgingCategory` owns each competition's judging method, rubric, judge access, and results. Categories of kind `OVERALL` or `TRACK` each have exactly one `Track` record, which owns project membership, room access, table ranges, and rotation settings. Overall is created automatically and protected against deletion or conversion. Every project belongs to exactly one explicit track; projects in specialized tracks do not enter Overall. Challenges use opt-in project entries and explicit `ChallengeTrack` eligibility links, including for Overall. Future tracks are never enrolled automatically.
+`schema.prisma` targets PostgreSQL, Prisma, and Better Auth. `JudgingCategory` owns each competition's judging method, rubric, judge access, and results. Categories of kind `OVERALL` or `TRACK` each have exactly one `Track` record, which owns project membership, room access, and table ranges. Overall is created automatically and protected against deletion or conversion. Every project belongs to exactly one explicit track; projects in specialized tracks do not enter Overall. Challenges use opt-in project entries and explicit `ChallengeTrack` eligibility links, including for Overall. Future tracks are never enrolled automatically.
 
 ## Important application/database invariants
 
@@ -17,7 +17,7 @@
 - `Evaluation` denormalizes category/judge/project from its `JudgingAssignment`; enforce exact match and category method constraints in your service or SQL triggers.
 - A completed assignment must have one evaluation; an incomplete assignment must not count toward coverage; no duplicate simultaneously active assignments for the same judge/category.
 - For fair allocation, fetch and reserve the next project in one transaction; prioritize lowest completed-evaluation counts and respect room availability, conflicts, hidden projects, opt-in, and current category membership.
-- The room rotation percentage uses _eligible projects in the judge's current room_ and distinct completed project coverage, not raw evaluation count, unless you deliberately select another definition.
+- `Hackathon.roomSwitchPercent` applies to every track in 5% steps from 0 to 100; 0 disables automatic rotation. The room rotation percentage uses _eligible projects in the judge's current room_ and distinct completed project coverage, not raw evaluation count, unless you deliberately select another definition.
 - Don't delete completed evaluations if a project is hidden/disqualified; preserve auditable history.
 - Invitation token is random, only hashed in DB. Redemption checks expiry/status/email/use count in one transaction. `InvitationRedemption` provides proper audit for multi-use QR invitations.
 - `Invitation.redeemedById` is optional convenience for single-use links; multi-use redemptions live in `InvitationRedemption`.

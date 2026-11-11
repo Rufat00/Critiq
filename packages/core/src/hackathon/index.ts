@@ -8,3 +8,9 @@ export type {
 } from './schemas/setup-completion-schema';
 export type { MarkReadyInput } from './schemas/mark-ready-schema';
 export type { HackathonSetupSummary } from './lib/build-setup-summary';
+export {
+  getHackathonSettings,
+  type HackathonSettings,
+} from './queries/get-hackathon-settings';
+export { updateHackathonSettings } from './mutations/update-hackathon-settings';
+export type { UpdateHackathonSettingsInput } from './schemas/update-hackathon-settings-schema';

@@ -159,12 +159,14 @@ model Installation {
 
 // ---------------- Hackathon ----------------
 model Hackathon {
-  id         String          @id @default(cuid())
-  name       String?
-  status     HackathonStatus @default(DRAFT)
-  scoreScale Int             @default(5) // Validate: only 5 or 10.
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
+  id                String          @id @default(cuid())
+  name              String?
+  status            HackathonStatus @default(DRAFT)
+  scoreScale        Int             @default(5) // Validate: only 5 or 10.
+  // Eligible room projects completed before rotation; 0 disables rotation.
+  roomSwitchPercent Int             @default(25)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
   setupCompletions SetupCompletion[]
   categories       JudgingCategory[]
@@ -216,14 +218,12 @@ model JudgingCategory {
 }
 
 model Track {
-  id                String   @id @default(cuid())
-  hackathonId       String
-  categoryId        String   @unique
+  id          String   @id @default(cuid())
+  hackathonId String
+  categoryId  String   @unique
   // Overall and specialized tracks share the same project and room configuration.
-  // Percentage of eligible room projects completed before rotation.
-  roomSwitchPercent Int      @default(25)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   hackathon         Hackathon        @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
   category          JudgingCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)

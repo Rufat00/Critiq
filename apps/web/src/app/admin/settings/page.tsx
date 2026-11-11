@@ -1,5 +1,6 @@
-import { SetupSectionPage } from '../components/setup-section-page';
+import { getSettingsPage } from './queries';
+import { SettingsForm } from './components/settings-form';
 
-export default function Page() {
-  return <SetupSectionPage sectionId="event" />;
+export default async function Page() {
+  return <SettingsForm settings={await getSettingsPage()} />;
 }
