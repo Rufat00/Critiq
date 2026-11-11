@@ -76,7 +76,7 @@ export function SettingsForm({ settings }: { settings: HackathonSettings }) {
     <>
       <AdminHeading title="Settings" />
       <Tabs defaultValue="overall">
-        <TabsList aria-label="Settings">
+        <TabsList variant="default" aria-label="Settings">
           <TabsTrigger value="overall">Overall</TabsTrigger>
           {settings.canResetData && (
             <TabsTrigger value="danger">Danger zone</TabsTrigger>
