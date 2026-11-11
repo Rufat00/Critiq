@@ -18,11 +18,6 @@ export const markHackathonReady = createMutation({
         AppErrorCode.CONFLICT,
         'Setup changed. Refresh and check the latest readiness issues.',
       );
-    if (summary.completeCount !== summary.totalCount)
-      throw new AppError(
-        AppErrorCode.INVALID_STATE,
-        'Complete your checklist before marking ready.',
-      );
     if (summary.blockers.length)
       throw new AppError(
         AppErrorCode.INVALID_STATE,
@@ -31,7 +26,7 @@ export const markHackathonReady = createMutation({
     if (summary.warnings.length && !input.acknowledgeWarnings)
       throw new AppError(
         AppErrorCode.VALIDATION_ERROR,
-        'Confirm the listed warnings and incomplete setup first.',
+        'Acknowledge the listed warnings first.',
       );
     await ctx.db.hackathon.update({ where: { id }, data: { status: 'READY' } });
     return { id, warnings: summary.warnings };

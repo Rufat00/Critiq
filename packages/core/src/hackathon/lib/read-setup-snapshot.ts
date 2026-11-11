@@ -8,7 +8,6 @@ export async function readSetupSnapshot(ctx: AppContext) {
   const hackathon = await ctx.db.hackathon.findUnique({
     where: { id },
     include: {
-      setupCompletions: true,
       categories: {
         orderBy: { id: 'asc' },
         include: {

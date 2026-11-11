@@ -54,7 +54,6 @@ function fixture({ failAudit = false, status = 'JUDGING' } = {}) {
       },
       project: { deleteMany: remove('projects') },
       invitation: { deleteMany: remove('invitations') },
-      setupCompletion: { deleteMany: remove('setup') },
       rubric: { deleteMany: remove('rubrics') },
       judgeCategory: { deleteMany: remove('memberships') },
       room: { deleteMany: remove('rooms') },

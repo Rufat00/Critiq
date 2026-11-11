@@ -27,7 +27,7 @@ export async function getJudgesPage(
   if (!categoryId)
     return {
       tracks,
-      locked: categories.status !== 'DRAFT',
+      locked: !['DRAFT', 'READY'].includes(categories.status),
       categoryId,
       search,
       view,
@@ -54,7 +54,7 @@ export async function getJudgesPage(
   ]);
   return {
     tracks,
-    locked: categories.status !== 'DRAFT',
+    locked: !['DRAFT', 'READY'].includes(categories.status),
     categoryId,
     search,
     view,

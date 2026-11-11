@@ -4,7 +4,7 @@ import { AppError, AppErrorCode } from '../../shared/errors';
 
 export async function lockDraft(ctx: AppContext) {
   const id = requireHackathonId(ctx);
-  // Serialize checklist completion and stage changes before reading configuration.
+  // Serialize configuration writes and stage changes before reading configuration.
   const updated = await ctx.db.hackathon.updateMany({
     where: { id, status: 'DRAFT' },
     data: { status: 'DRAFT' },

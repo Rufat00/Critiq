@@ -1,5 +1,4 @@
 import { fingerprint, type SetupSnapshot } from './read-setup-snapshot';
-import type { SetupSection } from '../schemas/setup-completion-schema';
 
 export function buildSetupSummary({ hackathon: h, judges }: SetupSnapshot) {
   const projects = h.projects.filter((p) => p.isActive && !p.isDisqualified);
@@ -62,7 +61,7 @@ export function buildSetupSummary({ hackathon: h, judges }: SetupSnapshot) {
   ).length;
   if (missingLocations)
     warnings.push(
-      `${missingLocations} project${missingLocations === 1 ? '' : 's'} need a room or table location.`,
+      `${missingLocations} project${missingLocations === 1 ? ' needs' : 's need'} a room or table location.`,
     );
   const names = new Map<string, number>();
   for (const p of projects) {
@@ -113,114 +112,24 @@ export function buildSetupSummary({ hackathon: h, judges }: SetupSnapshot) {
     (category) => category.kind !== 'OVERALL',
   ).length;
   const activeRooms = h.rooms.filter((room) => room.isActive);
-  const sections: {
-    id: SetupSection;
-    title: string;
-    description: string;
-    count: number | null;
-    canComplete: boolean;
-    href: string;
-    done: boolean;
-    fingerprint: string;
-  }[] = [
-    {
-      id: 'event',
-      title: 'Create your event',
-      description: 'Name your hackathon to create its judging workspace.',
-      count: null,
-      canComplete: Boolean(h.name?.trim()),
-      href: '/admin/settings',
-      fingerprint: fingerprint({ name: h.name, scoreScale: h.scoreScale }),
-      done: false,
-    },
-    {
-      id: 'categories',
-      title: 'Judging categories',
-      description:
-        'Set up overall judging, with optional tracks and challenges.',
-      count: customCategoryCount,
-      canComplete: customCategoryCount > 0,
-      href: '/admin/categories',
-      fingerprint: fingerprint({ categories: h.categories, rooms: h.rooms }),
-      done: false,
-    },
-    {
-      id: 'projects',
-      title: 'Projects',
-      description:
-        'Prepare the projects, category entries, and presentation locations.',
-      count: projects.length,
-      canComplete: projects.length > 0,
-      href: '/admin/projects',
-      fingerprint: fingerprint({
-        projects: h.projects,
-        categories: h.categories,
-        rooms: h.rooms,
-      }),
-      done: false,
-    },
-    {
-      id: 'judges',
-      title: 'Judges',
-      description:
-        'Prepare judge accounts and give them access to their categories.',
-      count: activeJudges.length,
-      canComplete: activeJudges.length > 0,
-      href: '/admin/judges',
-      fingerprint: fingerprint({
-        judges,
-        categories: h.categories,
-        invitations: h.invitations,
-      }),
-      done: false,
-    },
-    {
-      id: 'rooms',
-      title: 'Rooms',
-      description:
-        'Set up presentation rooms and table locations for your projects.',
-      count: activeRooms.length,
-      canComplete: activeRooms.length > 0,
-      href: '/admin/rooms',
-      fingerprint: fingerprint({ rooms: h.rooms }),
-      done: false,
-    },
-  ];
-  for (const section of sections)
-    section.done =
-      section.canComplete &&
-      (section.id === 'event' ||
-        h.setupCompletions.some(
-          (completion) =>
-            completion.section === section.id &&
-            completion.fingerprint === section.fingerprint,
-        ));
-  const completeCount = sections.filter((section) => section.done).length;
-  const completionWarnings = sections
-    .filter(
-      (section) =>
-        !section.done && (section.id !== 'categories' || section.canComplete),
-    )
-    .map((section) => `${section.title} setup has not been marked as done.`);
-  const allWarnings = [...warnings, ...completionWarnings];
   return {
     id: h.id,
     name: h.name,
     status: h.status,
     scoreScale: h.scoreScale,
-    sections,
-    completeCount,
-    totalCount: 5,
-    progress: Math.round((completeCount / 5) * 100),
     blockers,
-    warnings: allWarnings,
+    warnings,
     fingerprint: fingerprint({
-      sections: sections.map((s) => ({
-        fingerprint: s.fingerprint,
-        done: s.done,
-      })),
+      name: h.name,
+      scoreScale: h.scoreScale,
+      roomSwitchPercent: h.roomSwitchPercent,
+      categories: h.categories,
+      projects: h.projects,
+      rooms: h.rooms,
+      invitations: h.invitations,
+      judges,
       blockers,
-      warnings: allWarnings,
+      warnings,
     }),
     counts: {
       projects: projects.length,

@@ -161,21 +161,6 @@ test(
               expiresAt: new Date(Date.now() + 3600000),
             },
           });
-          await tx.setupCompletion.upsert({
-            where: {
-              hackathonId_section: {
-                hackathonId: hackathon.id,
-                section: 'projects',
-              },
-            },
-            create: {
-              hackathonId: hackathon.id,
-              section: 'projects',
-              fingerprint: 'test',
-              completedById: admin.id,
-            },
-            update: { completedById: admin.id },
-          });
           await tx.hackathon.update({
             where: { id: hackathon.id },
             data: {
@@ -213,7 +198,6 @@ test(
             tx.evaluation.count(),
             tx.judgingAssignment.count(),
             tx.rubric.count(),
-            tx.setupCompletion.count(),
             tx.judgeCategory.count(),
             tx.trackRoom.count(),
           ])

@@ -103,21 +103,15 @@ Apply committed migrations with `pnpm db:deploy` before opening the admin home.
 Category participation (`JudgingCategory.isEnabled`) is separate from `isVisible`;
 hiding a category does not remove its readiness requirements.
 
-`SetupCompletion` stores a section fingerprint, trusted organizer, and completion
-time. The checklist covers event details, custom categories, projects, judges,
-and rooms. Overall is excluded from displayed category counts. Event creation
-completes automatically when the hackathon is named. Organizers can mark the
-other configured sections as done and undo their completion. Relevant
-configuration changes invalidate completion. Marking Ready requires a complete
-checklist as well as successful server-side readiness validation.
+The admin home shows counts for tracks and challenges (excluding Overall), active
+projects, active judges, and active rooms. Marking Ready requires successful
+server-side readiness validation and acknowledgment of any warnings; there are
+no manual section completions. Marking Ready does not start judging.
 
-Completion writes and Draft/Ready transitions serialize on the hackathon row
-and commit with audits. Future configuration mutations must use the same
-hackathon lock and enforce Draft status before changing competition setup.
-
-Checklist setup links open dedicated pages; there is no checklist setup drawer.
-The destination pages show saved configuration; entity editors/imports and the
-live judging/results workflows remain separate work.
+Draft/Ready transitions serialize on the hackathon row and commit with audits.
+Configuration mutations use the same hackathon lock and require Draft status.
+Judge management remains available in both Draft and Ready. Organizers can return
+to Draft before judging starts to unlock the other settings.
 
 ## Category configuration
 

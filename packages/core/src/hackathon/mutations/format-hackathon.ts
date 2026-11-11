@@ -42,7 +42,6 @@ export const formatHackathon = createMutation({
       where: { hackathonId },
     });
     await ctx.db.invitation.deleteMany({ where: { hackathonId } });
-    await ctx.db.setupCompletion.deleteMany({ where: { hackathonId } });
     const categories = await ctx.db.judgingCategory.deleteMany({
       where: { hackathonId, kind: { not: 'OVERALL' } },
     });

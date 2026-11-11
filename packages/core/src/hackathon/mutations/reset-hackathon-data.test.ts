@@ -7,7 +7,7 @@ const { resetHackathonData } = await import('./reset-hackathon-data');
 const { AppError } = await import('../../shared/errors');
 
 function fixture({ status = 'DRAFT', activity = '', failAudit = false } = {}) {
-  const state = { deleted: 0, audits: 0, completions: 0 };
+  const state = { deleted: 0, audits: 0 };
   const count = (name: string) => async () => (activity === name ? 1 : 0);
   function client(draft: typeof state) {
     return {
@@ -30,17 +30,6 @@ function fixture({ status = 'DRAFT', activity = '', failAudit = false } = {}) {
           assert.equal(where.hackathonId, 'event');
           draft.deleted += 3;
           return { count: 3 };
-        },
-      },
-      setupCompletion: {
-        deleteMany: async ({
-          where,
-        }: {
-          where: { hackathonId: string; section: { in: string[] } };
-        }) => {
-          assert.equal(where.hackathonId, 'event');
-          assert.deepEqual(where.section.in, ['projects', 'rooms']);
-          draft.completions++;
         },
       },
       auditLog: {
@@ -157,13 +146,13 @@ test('judging history blocks every reset even in a reopened draft', async () => 
     assert.equal(f.state.deleted, 0);
   }
 });
-test('project reset scopes deletion, clears readiness, and audits atomically', async () => {
+test('project reset scopes deletion and audits atomically', async () => {
   const f = fixture();
   assert.equal((await resetHackathonData(f.ctx, input)).deleted, 3);
-  assert.deepEqual(f.state, { deleted: 3, audits: 1, completions: 1 });
+  assert.deepEqual(f.state, { deleted: 3, audits: 1 });
 });
-test('audit failure rolls back deletion and checklist changes', async () => {
+test('audit failure rolls back deletion', async () => {
   const f = fixture({ failAudit: true });
   await rejects(resetHackathonData(f.ctx, input), 'INTERNAL_SERVER_ERROR');
-  assert.deepEqual(f.state, { deleted: 0, audits: 0, completions: 0 });
+  assert.deepEqual(f.state, { deleted: 0, audits: 0 });
 });

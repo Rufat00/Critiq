@@ -16,12 +16,31 @@ import {
 } from '@/components/ui/dialog';
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Checkbox } from '@/components/ui/checkbox';
-import { SetupReadinessAlert } from './setup-readiness-alert';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from 'sonner';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import {
   markHackathonReadyAction,
   returnHackathonToDraftAction,
 } from '../actions';
+
+const readinessDisclaimers = [
+  'This does not start judging.',
+  'All settings will be locked except judges.',
+  'You can return to draft to make changes before judging starts.',
+];
+
+function ReadinessDisclaimers() {
+  return (
+    <ul className="flex flex-col gap-2" role="list">
+      {readinessDisclaimers.map((disclaimer) => (
+        <li key={disclaimer} className="flex items-start gap-2 leading-relaxed">
+          <span aria-hidden="true">*</span>
+          <span>{disclaimer}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export function ReadinessActions({
   summary,
@@ -29,7 +48,6 @@ export function ReadinessActions({
   summary: HackathonSetupSummary;
 }) {
   const [open, setOpen] = useState(false);
-  const checklistComplete = summary.completeCount === summary.totalCount;
   const [error, setError] = useState<string>();
   const [pending, startTransition] = useTransition();
   const router = useRouter();
@@ -46,6 +64,7 @@ export function ReadinessActions({
           setError(result.error.message);
           return;
         }
+        toast.success('Event marked ready for judging.');
         setOpen(false);
         router.refresh();
       } catch {
@@ -70,7 +89,10 @@ export function ReadinessActions({
               try {
                 const result = await returnHackathonToDraftAction();
                 if (!result.ok) setError(result.error.message);
-                else router.refresh();
+                else {
+                  toast.success('Event returned to draft.');
+                  router.refresh();
+                }
               } catch {
                 setError('Unable to return to draft. Please try again.');
               }
@@ -92,14 +114,27 @@ export function ReadinessActions({
     );
   return (
     <>
-      <SetupReadinessAlert
-        checklistComplete={checklistComplete}
-        onFinish={() => {
-          form.reset();
-          setError(undefined);
-          setOpen(true);
-        }}
-      />
+      <section
+        aria-label="Prepare for judging"
+        className="flex flex-col items-start gap-4"
+      >
+        <Alert variant="soft" role="note" className="gap-y-3 p-5 sm:p-6">
+          <AlertTitle>Before you mark ready</AlertTitle>
+          <AlertDescription>
+            <ReadinessDisclaimers />
+          </AlertDescription>
+        </Alert>
+        <Button
+          className="w-full sm:w-auto"
+          onClick={() => {
+            form.reset();
+            setError(undefined);
+            setOpen(true);
+          }}
+        >
+          Ready for judging
+        </Button>
+      </section>
       <Dialog
         open={open}
         onOpenChange={(value) => {
@@ -115,10 +150,11 @@ export function ReadinessActions({
           }}
         >
           <DialogHeader>
-            <DialogTitle>Ready for the final checkpoint?</DialogTitle>
-            <DialogDescription>
-              Marking ready locks configuration. You can return to draft before
-              judging starts.
+            <DialogTitle>Mark event ready for judging?</DialogTitle>
+            <DialogDescription asChild>
+              <div>
+                <ReadinessDisclaimers />
+              </div>
             </DialogDescription>
           </DialogHeader>
           <form
@@ -169,7 +205,7 @@ export function ReadinessActions({
                             disabled={saving}
                           />
                           <FieldLabel htmlFor="acknowledge-warnings">
-                            I understand these warnings and incomplete setup.
+                            I acknowledge these warnings.
                           </FieldLabel>
                         </Field>
                       )}
@@ -200,7 +236,7 @@ export function ReadinessActions({
                   (summary.warnings.length > 0 && !acknowledged)
                 }
               >
-                Mark ready
+                Mark ready for judging
               </LoadingButton>
             </DialogFooter>
           </form>

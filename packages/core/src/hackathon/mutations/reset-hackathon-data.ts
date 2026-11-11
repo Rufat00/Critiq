@@ -121,16 +121,6 @@ export const resetHackathonData = createMutation({
       deleted = (await ctx.db.room.deleteMany({ where: { hackathonId } }))
         .count;
     }
-    // Clear confirmations affected by the reset; readiness must be reviewed again.
-    const sections =
-      input.section === 'projects'
-        ? ['projects', 'rooms']
-        : input.section === 'categories'
-          ? ['categories', 'projects', 'judges', 'rooms']
-          : [input.section];
-    await ctx.db.setupCompletion.deleteMany({
-      where: { hackathonId, section: { in: sections } },
-    });
     return { hackathonId, section: input.section, deleted };
   },
   {

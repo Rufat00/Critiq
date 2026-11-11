@@ -13,7 +13,8 @@ import { VideoCard } from '@/components/video-card';
 import { videos } from '@/lib/constants/videos';
 import { getAuthContext } from '@/lib/auth/auth-context';
 import { SetupRequiredDialog } from './components/setup-required-dialog';
-import { SetupChecklist } from './components/setup-checklist';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import { ReadinessActions } from './components/readiness-actions';
 import { getAdminHome } from '../queries';
 import { stageLabels } from '../lib/stage-navigation';
@@ -44,7 +45,7 @@ export default async function Page({
           isDraft
             ? 'Get the essentials in place, check your setup, and give your judges a smooth start.'
             : isReady
-              ? 'Review your event summary below. Return to draft whenever you need to adjust your setup before judging starts.'
+              ? 'Judging has not started. All settings are locked except judges. Return to draft to change your setup.'
               : 'Your event configuration is locked. Operational monitoring and results will be available as those workflows are implemented.'
         }
       />
@@ -58,10 +59,65 @@ export default async function Page({
           </AlertDescription>
         </Alert>
       )}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {[
+          {
+            title: 'Tracks · Challenges',
+            value: `${summary.counts.tracks} · ${summary.counts.challenges}`,
+            valueLabel: `${summary.counts.tracks} tracks and ${summary.counts.challenges} challenges`,
+            actionLabel: 'Manage tracks and challenges',
+            href: '/admin/categories',
+          },
+          {
+            title: 'Projects',
+            value: summary.counts.projects,
+            valueLabel: undefined,
+            actionLabel: 'Manage projects',
+            href: '/admin/projects',
+          },
+          {
+            title: 'Judges',
+            value: summary.counts.judges,
+            valueLabel: undefined,
+            actionLabel: 'Manage judges',
+            href: '/admin/judges',
+          },
+          {
+            title: 'Rooms',
+            value: summary.counts.rooms,
+            valueLabel: undefined,
+            actionLabel: 'Manage rooms',
+            href: '/admin/rooms',
+          },
+        ].map((stat) => (
+          <Card key={stat.href} className="flex flex-col">
+            <CardHeader>
+              <CardTitle>{stat.title}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-1 items-center justify-between gap-3">
+              <p
+                className="text-3xl font-semibold tabular-nums"
+                aria-label={stat.valueLabel}
+              >
+                {stat.value}
+              </p>
+              <Button
+                asChild
+                variant="secondary"
+                size="sm"
+                className="shrink-0"
+              >
+                <Link href={stat.href} aria-label={stat.actionLabel}>
+                  Manage
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
       <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(260px,320px)] xl:gap-10">
         {isDraft ? (
           <div className="flex min-w-0 flex-col gap-6">
-            <SetupChecklist summary={summary} />
             <ReadinessActions summary={summary} />
           </div>
         ) : (

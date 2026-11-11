@@ -8,7 +8,6 @@ export function snapshot(): SetupSnapshot {
       status: 'DRAFT',
       scoreScale: 5,
       roomSwitchPercent: 25,
-      setupCompletions: [],
       rooms: [],
       invitations: [],
       projects: [

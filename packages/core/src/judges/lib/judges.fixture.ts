@@ -31,9 +31,21 @@ export function judgeDatabase({
     return {
       $queryRaw: async () => [],
       hackathon: {
-        updateMany: async ({ where }: { where: { id: string } }) => ({
-          count: Number(where.id === 'event' && status === 'DRAFT'),
-        }),
+        updateMany: async ({
+          where,
+          data,
+        }: {
+          where: { id: string; status: { in: string[] } };
+          data: { status?: string; updatedAt: Date };
+        }) => {
+          if (data.status !== undefined)
+            throw new Error('Judge edits must preserve the event stage');
+          return {
+            count: Number(
+              where.id === 'event' && where.status.in.includes(status),
+            ),
+          };
+        },
         findUniqueOrThrow: async () => ({ name: 'Test hackathon' }),
       },
       judgingCategory: {

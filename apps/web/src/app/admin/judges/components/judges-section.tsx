@@ -44,8 +44,7 @@ export function JudgesSection({
       {data.locked && (
         <Alert>
           <AlertDescription>
-            Judge setup is locked. Return the hackathon to draft before
-            inviting, moving, or removing judges.
+            Judge setup is locked because judging has started.
           </AlertDescription>
         </Alert>
       )}

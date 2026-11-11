@@ -277,3 +277,20 @@ test('email delivery runs after commit, returns no bearer URL, and failures revo
     }
   }
 });
+
+test('judge management remains available when ready, with audits', async () => {
+  const db = judgeDatabase({ status: 'READY' });
+  await moveJudge(db.ctx, {
+    userId: 'judge',
+    categoryId: 'overall',
+    targetCategoryId: 'track',
+  });
+  assert.ok(
+    db
+      .read()
+      .memberships.some((row) => row.categoryId === 'track' && row.isActive),
+  );
+  assert.equal(db.read().audits.length, 1);
+  await createJudgeInvitation(db.ctx, { categoryId: 'track' });
+  assert.equal(db.read().invitations.length, 1);
+});
