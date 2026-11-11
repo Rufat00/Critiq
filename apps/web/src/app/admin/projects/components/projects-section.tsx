@@ -36,7 +36,7 @@ export function ProjectsSection({ data }: { data: ProjectsPageData }) {
         track: data.categoryId ?? '',
         search: data.search,
         page: String(data.projects?.pagination.page ?? 1),
-        size: String(data.projects?.pagination.pageSize ?? 25),
+
         ...changes,
       });
       const href = `/admin/projects?${params}`;

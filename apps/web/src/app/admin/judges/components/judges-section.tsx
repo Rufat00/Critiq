@@ -30,7 +30,7 @@ export function JudgesSection({
           (data.view === 'judges' ? data.judges : data.invitations)?.pagination
             .page ?? 1,
         ),
-        size: String(data.judges?.pagination.pageSize ?? 25),
+
         ...changes,
       });
       const href = `/admin/judges?${params}`;

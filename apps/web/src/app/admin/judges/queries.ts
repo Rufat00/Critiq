@@ -21,9 +21,6 @@ export async function getJudgesPage(
     Number.isInteger(pageValue) && pageValue > 0 && pageValue <= 100000
       ? pageValue
       : 1;
-  const size = Number(params.size);
-  const pageSize: 10 | 25 | 50 | 100 =
-    size === 10 || size === 50 || size === 100 ? size : 25;
   const search =
     typeof params.search === 'string' ? params.search.slice(0, 200) : '';
   const view = params.view === 'invitations' ? 'invitations' : 'judges';
@@ -40,7 +37,7 @@ export async function getJudgesPage(
   const input = {
     filters: { categoryId },
     search,
-    pagination: { page, pageSize },
+    pagination: { page },
   };
   const [judges, invitations] = await Promise.all([
     listJudges(ctx, {

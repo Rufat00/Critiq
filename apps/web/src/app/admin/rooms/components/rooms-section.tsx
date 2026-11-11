@@ -23,14 +23,6 @@ import {
   TableRow,
   TableCell,
 } from '@/components/ui/table';
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { RoomFormDialog } from './room-form-dialog';
 import { RoomExpandedPanel } from './room-expanded-panel';
@@ -46,7 +38,6 @@ export function RoomsSection({ data }: { data: RoomsPageData }) {
     const params = new URLSearchParams({
       search: data.search,
       page: String(p.page),
-      size: String(p.pageSize),
       ...changes,
     });
     startTransition(() => {
@@ -256,24 +247,6 @@ export function RoomsSection({ data }: { data: RoomsPageData }) {
             {p.page} of {p.totalPages || 1}
           </p>
           <div className="flex items-center gap-2">
-            <Select
-              value={String(p.pageSize)}
-              disabled={pending}
-              onValueChange={(size) => navigate({ size, page: '1' })}
-            >
-              <SelectTrigger aria-label="Rooms per page" className="w-auto">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {[10, 25, 50, 100].map((size) => (
-                    <SelectItem key={size} value={String(size)}>
-                      {size} per page
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
             <Button
               variant="secondary"
               size="icon"

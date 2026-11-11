@@ -9,20 +9,17 @@ export async function getProjectsPage(
   const track =
     categories.tracks.find((t) => t.id === params.track) ??
     categories.tracks[0];
-  const pageNumber = Number(params.page),
-    size = Number(params.size);
+  const pageNumber = Number(params.page);
   const page =
     Number.isInteger(pageNumber) && pageNumber > 0 && pageNumber <= 100000
       ? pageNumber
       : 1;
-  const pageSize: 10 | 25 | 50 | 100 =
-    size === 10 || size === 50 || size === 100 ? size : 25;
   const search =
     typeof params.search === 'string' ? params.search.slice(0, 200) : '';
   const projects = track
     ? await listProjects(ctx, {
         filters: { trackId: track.trackId },
-        pagination: { page, pageSize },
+        pagination: { page },
         search,
       })
     : null;
