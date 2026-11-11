@@ -10,6 +10,7 @@ async function AdminWorkspace({ children }: { children: ReactNode }) {
   if (!session) redirect('/');
   if (!session.isAdmin()) redirect('/judging');
   const summary = await getAdminHome();
+  if (!summary.name?.trim()) redirect(session.isOwner() ? '/setup' : '/');
   return (
     <AdminShell summary={summary} userName={session.user.name}>
       {children}

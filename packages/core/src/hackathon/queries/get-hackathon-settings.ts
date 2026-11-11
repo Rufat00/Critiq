@@ -20,7 +20,10 @@ export const getHackathonSettings = createQuery({
   });
   if (!settings)
     throw new AppError(AppErrorCode.NOT_FOUND, 'Hackathon not found.');
-  return settings;
+  return {
+    ...settings,
+    canResetData: ctx.actor.type === 'user' && ctx.actor.role === 'OWNER',
+  };
 });
 export type HackathonSettings = Awaited<
   ReturnType<typeof getHackathonSettings>
