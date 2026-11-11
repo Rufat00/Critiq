@@ -74,6 +74,7 @@ export function parseCsv(text: string): string[][] {
 
 export function parseDevpostProject(row: Record<string, string>) {
   const submissionUrl = row[DEVPOST_COLUMNS.submissionUrl]?.trim() || '';
+  const status = row[DEVPOST_COLUMNS.status]?.trim().toLowerCase() ?? '';
   return {
     name: row[DEVPOST_COLUMNS.name]?.trim() || '',
     description: row[DEVPOST_COLUMNS.description]?.trim() || '',
@@ -88,7 +89,7 @@ export function parseDevpostProject(row: Record<string, string>) {
       .map((value) => value.trim())
       .filter(Boolean),
     isSubmitted:
-      row[DEVPOST_COLUMNS.status]?.trim().startsWith('Submitted') ?? false,
+      status.startsWith('submitted') && status !== 'submitted (hidden)',
   };
 }
 

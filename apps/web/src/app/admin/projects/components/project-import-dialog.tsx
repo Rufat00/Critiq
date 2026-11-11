@@ -92,7 +92,7 @@ export function ProjectImportDialog({
             return;
           }
           toast.success(
-            `${result.data.added} projects added: ${result.data.placed} placed, ${result.data.unassigned} awaiting available tables. ${result.data.duplicates} duplicates and ${result.data.notSubmitted} non-submitted rows skipped.`,
+            `${result.data.added} projects added: ${result.data.placed} placed, ${result.data.unassigned} awaiting available tables. ${result.data.duplicates} duplicates and ${result.data.notSubmitted} hidden or non-submitted rows skipped.`,
           );
           setOpen(false);
           reset();
@@ -220,10 +220,10 @@ export function ProjectImportDialog({
                 <RiInformationLine />
                 <AlertTitle>Only submitted projects are added</AlertTitle>
                 <AlertDescription>
-                  Rows whose Project Status starts with “Submitted” are
-                  eligible. Existing projects are kept as they are; duplicate
-                  submission URLs, Devpost IDs, and titles without a URL are
-                  skipped.
+                  Submitted projects are eligible. “Submitted (Hidden)” and
+                  “Draft” projects are skipped. Existing projects are kept as
+                  they are; duplicate submission URLs, Devpost IDs, and titles
+                  without a URL are skipped.
                 </AlertDescription>
               </Alert>
               {preview ? (
@@ -233,7 +233,8 @@ export function ProjectImportDialog({
                       <strong>{preview.projects.length}</strong> ready to add
                     </span>
                     <span>
-                      <strong>{preview.notSubmitted}</strong> not submitted
+                      <strong>{preview.notSubmitted}</strong> hidden or not
+                      submitted
                     </span>
                     <span>
                       <strong>{preview.duplicates}</strong> duplicates

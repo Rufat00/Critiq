@@ -136,3 +136,27 @@ test('project validation rejects unsafe URLs, empty titles, oversized descriptio
     'https://example.com',
   );
 });
+
+test('hidden submissions and drafts are excluded while visible submissions remain eligible', () => {
+  for (const status of [
+    'Submitted (Hidden)',
+    'Draft',
+    ' Submitted (Hidden) ',
+    'submitted (hidden)',
+    ' Draft ',
+    '',
+  ]) {
+    assert.equal(
+      parseDevpostProject({ 'Project Status': status }).isSubmitted,
+      false,
+      status,
+    );
+  }
+  for (const status of ['Submitted', 'Submitted (complete)', ' Submitted ']) {
+    assert.equal(
+      parseDevpostProject({ 'Project Status': status }).isSubmitted,
+      true,
+      status,
+    );
+  }
+});

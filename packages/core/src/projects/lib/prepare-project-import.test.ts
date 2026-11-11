@@ -96,3 +96,22 @@ test('Critiq CSV still reports unknown challenges', async () => {
     { code: 'VALIDATION_ERROR' },
   );
 });
+
+test('Devpost skips hidden submissions and drafts before validation or deduplication', async () => {
+  const result = await prepareProjectImport(ctx, {
+    format: 'devpost',
+    csv: [
+      Object.values(DEVPOST_COLUMNS).join(','),
+      'Project,,,,,Unknown track,,Submitted (Hidden)',
+      'Draft project,,,,,Unknown track,,Draft',
+      'Project,,,,,,,Submitted',
+    ].join('\n'),
+  });
+  assert.equal(result.totalRows, 3);
+  assert.equal(result.notSubmitted, 2);
+  assert.equal(result.duplicates, 0);
+  assert.deepEqual(
+    result.projects.map((project) => project.name),
+    ['Project'],
+  );
+});
