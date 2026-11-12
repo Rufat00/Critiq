@@ -8,7 +8,15 @@ export function snapshot(): SetupSnapshot {
       status: 'DRAFT',
       scoreScale: 5,
       roomSwitchPercent: 25,
-      rooms: [],
+      rooms: [
+        {
+          id: 'room',
+          isActive: true,
+          trackRooms: [
+            { trackId: 'overall-track', isActive: true, capacity: 10 },
+          ],
+        },
+      ],
       invitations: [],
       projects: [
         {
@@ -16,8 +24,8 @@ export function snapshot(): SetupSnapshot {
           name: 'Project',
           isActive: true,
           isDisqualified: false,
-          roomId: null,
-          tableNumber: null,
+          roomId: 'room',
+          tableNumber: 1,
           trackId: 'overall-track',
           challenges: [],
         },

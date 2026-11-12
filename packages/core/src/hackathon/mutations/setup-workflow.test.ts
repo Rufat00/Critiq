@@ -117,6 +117,11 @@ test('missing and foreign scope cannot read configuration', async () => {
 
 test('warnings need explicit acknowledgement; readiness transitions are atomic and reject duplicates', async () => {
   const db = database();
+  db.read().data.hackathon.projects.push({
+    ...db.read().data.hackathon.projects[0]!,
+    id: 'duplicate-name',
+    tableNumber: 2,
+  });
   const input = {
     fingerprint: buildSetupSummary(db.read().data).fingerprint,
     acknowledgeWarnings: false,
@@ -135,9 +140,8 @@ test('warnings need explicit acknowledgement; readiness transitions are atomic a
 
 test('blocking errors cannot be overridden and stage changes roll back on audit failure', async () => {
   const db = database();
-  db.read().data.judges[0]!.conflicts = [
-    { projectId: 'project' },
-  ] as ReturnType<typeof db.read>['data']['judges'][number]['conflicts'];
+  db.read().data.hackathon.projects[0]!.roomId = null;
+  db.read().data.hackathon.projects[0]!.tableNumber = null;
   await rejectsCode(
     markHackathonReady(db.ctx, {
       fingerprint: buildSetupSummary(db.read().data).fingerprint,
@@ -178,15 +182,15 @@ test('post-start stages cannot reopen draft or mark ready', async () => {
 
 test('valid configuration becomes Ready without manual completion and does not start judging', async () => {
   const db = database();
+  db.read().data.judges = [];
+  db.read().data.hackathon.categories[0]!.judges = [];
+  const categories = structuredClone(db.read().data.hackathon.categories);
   await markHackathonReady(db.ctx, {
     fingerprint: buildSetupSummary(db.read().data).fingerprint,
     acknowledgeWarnings: true,
   });
   assert.equal(db.read().data.hackathon.status, 'READY');
-  assert.deepEqual(
-    db.read().data.hackathon.categories,
-    snapshot().hackathon.categories,
-  );
+  assert.deepEqual(db.read().data.hackathon.categories, categories);
 });
 
 test('stale readiness confirmations cannot change the stage', async () => {

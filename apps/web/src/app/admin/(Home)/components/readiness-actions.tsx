@@ -25,7 +25,7 @@ import {
 
 const readinessDisclaimers = [
   'This does not start judging.',
-  'All settings will be locked except judges.',
+  'All settings will be locked except judges. You can still add judges after marking ready.',
   'You can return to draft to make changes before judging starts.',
 ];
 

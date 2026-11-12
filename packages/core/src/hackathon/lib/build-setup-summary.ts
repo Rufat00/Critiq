@@ -10,10 +10,6 @@ export function buildSetupSummary({ hackathon: h, judges }: SetupSnapshot) {
   if (!enabledCategories.some((c) => c.kind === 'OVERALL'))
     blockers.push('Configure an enabled overall judging category.');
   if (!projects.length) blockers.push('Add at least one active project.');
-  if (!activeJudges.length)
-    blockers.push(
-      'Add at least one active judge account. Invitations alone are not enough.',
-    );
   if (![5, 10].includes(h.scoreScale))
     blockers.push('Choose a score scale of 5 or 10.');
 
@@ -34,34 +30,19 @@ export function buildSetupSummary({ hackathon: h, judges }: SetupSnapshot) {
     });
     // Overall has no judging work when every project belongs to a specialized track.
     if (category.kind === 'OVERALL' && !eligible.length) continue;
-    const assigned = activeJudges.filter((j) =>
-      category.judges.some((m) => m.userId === j.id && m.isActive),
-    );
     if (!eligible.length)
       blockers.push(
         `${category.name}: no eligible projects. Disable this category or add projects.`,
       );
-    if (!assigned.length)
-      blockers.push(`${category.name}: no active judges with category access.`);
     if (category.method === 'RUBRIC' && !category.rubric?.criteria.length)
       blockers.push(`${category.name}: add at least one rubric criterion.`);
-    if (
-      eligible.some(
-        (p) =>
-          assigned.length > 0 &&
-          assigned.every((j) => j.conflicts.some((c) => c.projectId === p.id)),
-      )
-    )
-      blockers.push(
-        `${category.name}: a project has conflicts with every assigned judge.`,
-      );
   }
   const missingLocations = projects.filter(
     (p) => !p.roomId || p.tableNumber === null,
   ).length;
   if (missingLocations)
-    warnings.push(
-      `${missingLocations} project${missingLocations === 1 ? ' needs' : 's need'} a room or table location.`,
+    blockers.push(
+      `${missingLocations} project${missingLocations === 1 ? ' needs' : 's need'} a room and table number. Configure room capacity for each project's track.`,
     );
   const names = new Map<string, number>();
   for (const p of projects) {
@@ -122,11 +103,11 @@ export function buildSetupSummary({ hackathon: h, judges }: SetupSnapshot) {
       name: h.name,
       scoreScale: h.scoreScale,
       roomSwitchPercent: h.roomSwitchPercent,
-      categories: h.categories,
+      categories: h.categories.map(
+        ({ judges: _judges, ...category }) => category,
+      ),
       projects: h.projects,
       rooms: h.rooms,
-      invitations: h.invitations,
-      judges,
       blockers,
       warnings,
     }),

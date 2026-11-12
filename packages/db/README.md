@@ -108,6 +108,13 @@ projects, active judges, and active rooms. Marking Ready requires successful
 server-side readiness validation and acknowledgment of any warnings; there are
 no manual section completions. Marking Ready does not start judging.
 
+Readiness validates category configuration, project eligibility, and active room
+capacity. Every active, non-disqualified project must have an assigned room and
+table number; missing locations block Ready and cannot be acknowledged away.
+Judge accounts, category access, and conflicts do not affect readiness. Judges
+can still be added in Ready; judge availability checks belong to the future
+start-judging workflow.
+
 Draft/Ready transitions serialize on the hackathon row and commit with audits.
 Configuration mutations use the same hackathon lock and require Draft status.
 Judge management remains available in both Draft and Ready. Organizers can return
