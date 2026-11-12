@@ -167,13 +167,13 @@ model Hackathon {
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
-  categories       JudgingCategory[]
-  tracks           Track[]
-  challenges       Challenge[]
-  rooms            Room[]
-  projects         Project[]
-  invitations      Invitation[]
-  auditLogs        AuditLog[]
+  categories  JudgingCategory[]
+  tracks      Track[]
+  challenges  Challenge[]
+  rooms       Room[]
+  projects    Project[]
+  invitations Invitation[]
+  auditLogs   AuditLog[]
 }
 
 // The shared container for judging settings and results.
@@ -279,24 +279,13 @@ model TrackRoom {
   roomId    String
   sortOrder Int     @default(0)
   isActive  Boolean @default(true)
-  // Sparse/nonconsecutive table ranges can be defined with the child model.
+  capacity  Int     @default(0)
 
-  track       Track                 @relation(fields: [trackId], references: [id], onDelete: Cascade)
-  room        Room                  @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  tableRanges TrackRoomTableRange[]
+  track Track @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  room  Room  @relation(fields: [roomId], references: [id], onDelete: Cascade)
 
   @@unique([trackId, roomId])
   @@index([roomId])
-}
-
-model TrackRoomTableRange {
-  id          String    @id @default(cuid())
-  trackRoomId String
-  fromNumber  Int
-  toNumber    Int
-  trackRoom   TrackRoom @relation(fields: [trackRoomId], references: [id], onDelete: Cascade)
-
-  @@unique([trackRoomId, fromNumber, toNumber])
 }
 
 model Project {
@@ -329,6 +318,7 @@ model Project {
   conflicts   JudgeConflict[]
 
   @@unique([hackathonId, externalId])
+  @@unique([hackathonId, tableNumber])
   @@index([trackId])
   @@index([roomId, tableNumber])
   @@index([hackathonId, registrationOrder])

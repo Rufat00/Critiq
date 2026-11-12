@@ -39,10 +39,7 @@ export async function reassignProjectLocations(ctx: AppContext) {
       select: {
         roomId: true,
         trackId: true,
-        tableRanges: {
-          orderBy: [{ fromNumber: 'asc' }, { toNumber: 'asc' }],
-          select: { fromNumber: true, toNumber: true },
-        },
+        capacity: true,
       },
     }),
   ]);

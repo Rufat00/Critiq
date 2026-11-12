@@ -2,8 +2,12 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useForm, useStore } from '@tanstack/react-form';
 import { useRouter } from 'next/navigation';
-import { RiArrowLeftLine, RiArrowRightLine } from '@remixicon/react';
-import { toast } from 'sonner';
+import {
+  RiAlertLine,
+  RiArrowLeftLine,
+  RiArrowRightLine,
+} from '@remixicon/react';
+import { toast } from '@/components/ui/sonner';
 import type { RoomEditorData } from '@critiq/core/rooms';
 import type { AppFieldErrors } from '@critiq/core/errors';
 import {
@@ -18,7 +22,6 @@ import {
   DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   Field,
   FieldGroup,
@@ -27,17 +30,18 @@ import {
   FieldDescription,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Button, LoadingButton } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   useUnsavedGuard,
   useUnsavedGuardContext,
 } from '@/components/ui/unsaved-guard';
-import { cn } from '@/lib/utils';
-import { RoomRangesForm } from './room-ranges-form';
+import { RoomCapacitiesForm } from './room-capacities-form';
 
 export function RoomFormDialog({
   roomId,
@@ -86,7 +90,7 @@ export function RoomFormDialog({
       }}
     >
       <DialogContent
-        className="flex h-[min(38rem,calc(100dvh-2rem))] flex-col overflow-hidden sm:max-w-5xl"
+        className="flex h-[min(38rem,calc(100dvh-2rem))] flex-col overflow-hidden sm:max-w-2xl"
         aria-describedby={undefined}
         showCloseButton={!pending}
         onEscapeKeyDown={(e) => {
@@ -149,21 +153,22 @@ function RoomConfigurationForm({
   onPendingChange: (pending: boolean) => void;
 }) {
   const id = useId(),
-    router = useRouter(),
-    heading = useRef<HTMLHeadingElement>(null);
-  const [screen, setScreen] = useState<'details' | 'ranges'>('details'),
-    [error, setError] = useState(''),
-    [errors, setErrors] = useState<AppFieldErrors>({});
+    router = useRouter();
+  const heading = useRef<HTMLHeadingElement>(null);
+  const [step, setStep] = useState<'details' | 'spots'>('details');
+  const [error, setError] = useState('');
+  const [errors, setErrors] = useState<AppFieldErrors>({});
   const editing = !!data.room;
   const initial = {
     name: data.room?.name ?? '',
     description: data.room?.description ?? '',
     isActive: data.room?.isActive ?? true,
-    tracks:
-      data.room?.trackRooms.map((link) => ({
-        trackId: link.trackId,
-        ranges: link.tableRanges,
-      })) ?? [],
+    tracks: data.tracks.map((track) => ({
+      trackId: track.id,
+      capacity:
+        data.room?.trackRooms.find((link) => link.trackId === track.id)
+          ?.capacity ?? 0,
+    })),
   };
   const form = useForm({
     defaultValues: initial,
@@ -179,13 +184,20 @@ function RoomConfigurationForm({
         if (!result.ok) {
           setError(result.error.message);
           setErrors(result.error.fieldErrors ?? {});
-          setScreen(
-            Object.keys(result.error.fieldErrors ?? {}).some((key) =>
+          const fieldErrors = result.error.fieldErrors;
+          if (
+            fieldErrors?.name ||
+            fieldErrors?.description ||
+            fieldErrors?.isActive
+          ) {
+            changeStep('details');
+          } else if (
+            Object.keys(fieldErrors ?? {}).some((key) =>
               key.startsWith('tracks'),
             )
-              ? 'ranges'
-              : 'details',
-          );
+          ) {
+            changeStep('spots');
+          }
           toast.error('Room couldn’t be saved.');
           return;
         }
@@ -206,8 +218,8 @@ function RoomConfigurationForm({
     pending = useStore(form.store, (s) => s.isSubmitting);
   const dirty = JSON.stringify(values) !== JSON.stringify(initial);
   useUnsavedGuard({ when: dirty });
-  function changeScreen(next: 'details' | 'ranges') {
-    setScreen(next);
+  function changeStep(next: 'details' | 'spots') {
+    setStep(next);
     requestAnimationFrame(() => heading.current?.focus());
   }
   return (
@@ -215,132 +227,138 @@ function RoomConfigurationForm({
       className="flex min-h-0 flex-1 flex-col"
       onSubmit={(event) => {
         event.preventDefault();
-        if (!editing && screen === 'details') changeScreen('ranges');
+        if (locked || pending) return;
+        if (!editing && step === 'details') changeStep('spots');
         else void form.handleSubmit();
       }}
     >
       <DialogBody
         className={cn(
-          'flex min-h-0 flex-1 flex-col pt-14 sm:px-10 sm:pt-14',
-          editing ? 'overflow-hidden' : 'overflow-y-auto',
+          'flex min-h-0 flex-1 flex-col gap-6 pt-14 sm:px-10 sm:pt-14',
+          editing ? 'overflow-hidden' : 'overflow-y-auto overscroll-contain',
         )}
       >
-        <div
-          className={cn(
-            'flex w-full flex-col gap-6',
-            editing ? 'min-h-0 flex-1' : 'my-auto shrink-0',
-            !editing && screen === 'details' && 'mx-auto max-w-2xl',
-          )}
+        <DialogTitle
+          ref={heading}
+          tabIndex={-1}
+          className={cn('outline-none', editing && 'sr-only')}
         >
-          <DialogTitle
-            ref={heading}
-            tabIndex={-1}
-            className={cn('outline-none', editing && 'sr-only')}
-          >
-            {editing
-              ? 'Edit room'
-              : screen === 'details'
-                ? 'Name your room'
-                : 'Set up table ranges'}
-          </DialogTitle>
-          <RoomFormPanels
-            editing={editing}
-            screen={screen}
-            onScreenChange={setScreen}
-          >
-            {editing && (
-              <TabsList className="shrink-0" aria-label="Edit room">
-                <TabsTrigger value="details" disabled={pending}>
-                  Details
-                </TabsTrigger>
-                <TabsTrigger value="ranges" disabled={pending}>
-                  Table ranges
-                </TabsTrigger>
-              </TabsList>
-            )}
-            <RoomFormPanel editing={editing} screen={screen} value="details">
-              <FieldGroup>
-                <form.Field name="name">
-                  {(field) => (
-                    <Field data-invalid={!!errors.name}>
-                      <FieldLabel htmlFor={`${id}-name`}>Room name</FieldLabel>
-                      <Input
-                        id={`${id}-name`}
-                        required
-                        maxLength={100}
-                        value={field.state.value}
-                        disabled={locked || pending}
-                        aria-invalid={!!errors.name}
-                        aria-describedby={`${id}-name-error`}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => {
-                          field.handleChange(e.target.value);
-                          setErrors({});
-                        }}
-                      />
-                      <FieldError id={`${id}-name-error`}>
-                        {errors.name?.[0]}
-                      </FieldError>
-                    </Field>
-                  )}
-                </form.Field>
-                <form.Field name="description">
-                  {(field) => (
-                    <Field data-invalid={!!errors.description}>
-                      <FieldLabel htmlFor={`${id}-description`}>
-                        Description{' '}
-                        <span className="text-muted-foreground">
-                          (optional)
-                        </span>
-                      </FieldLabel>
-                      <Textarea
-                        id={`${id}-description`}
-                        rows={3}
-                        maxLength={2000}
-                        value={field.state.value}
-                        disabled={locked || pending}
-                        aria-invalid={!!errors.description}
-                        aria-describedby={`${id}-description-error`}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => {
-                          field.handleChange(e.target.value);
-                          setErrors({});
-                        }}
-                      />
-                      <FieldError id={`${id}-description-error`}>
-                        {errors.description?.[0]}
-                      </FieldError>
-                    </Field>
-                  )}
-                </form.Field>
-                {editing && (
-                  <form.Field name="isActive">
-                    {(field) => (
-                      <Field orientation="horizontal">
-                        <div className="flex flex-1 flex-col gap-1">
-                          <FieldLabel htmlFor={`${id}-active`}>
-                            Active room
-                          </FieldLabel>
-                          <FieldDescription>
-                            Available as a judging location.
-                          </FieldDescription>
-                        </div>
-                        <Switch
-                          id={`${id}-active`}
-                          checked={field.state.value}
-                          disabled={locked || pending}
-                          onCheckedChange={field.handleChange}
-                        />
-                      </Field>
-                    )}
-                  </form.Field>
+          {editing
+            ? 'Edit room'
+            : step === 'details'
+              ? 'Add room: details'
+              : 'Add room: track spots'}
+        </DialogTitle>
+        <RoomFormTabs
+          editing={editing}
+          step={step}
+          onStepChange={(next) => {
+            if (!pending) setStep(next);
+          }}
+        >
+          {editing && (
+            <TabsList className="shrink-0" aria-label="Edit room">
+              <TabsTrigger value="details" disabled={pending}>
+                Details
+              </TabsTrigger>
+              <TabsTrigger value="spots" disabled={pending}>
+                Spots
+              </TabsTrigger>
+            </TabsList>
+          )}
+          <RoomFormPanel editing={editing} step={step} value="details">
+            <FieldGroup>
+              <form.Field name="name">
+                {(field) => (
+                  <Field data-invalid={!!errors.name}>
+                    <FieldLabel htmlFor={`${id}-name`}>Room name</FieldLabel>
+                    <Input
+                      id={`${id}-name`}
+                      required
+                      maxLength={100}
+                      value={field.state.value}
+                      disabled={locked || pending}
+                      aria-invalid={!!errors.name}
+                      aria-describedby={`${id}-name-error`}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => {
+                        field.handleChange(e.target.value);
+                        setErrors({});
+                      }}
+                    />
+                    <FieldError id={`${id}-name-error`}>
+                      {errors.name?.[0]}
+                    </FieldError>
+                  </Field>
                 )}
-              </FieldGroup>
-            </RoomFormPanel>
-            <RoomFormPanel editing={editing} screen={screen} value="ranges">
+              </form.Field>
+              <form.Field name="description">
+                {(field) => (
+                  <Field data-invalid={!!errors.description}>
+                    <FieldLabel htmlFor={`${id}-description`}>
+                      Description{' '}
+                      <span className="text-muted-foreground">(optional)</span>
+                    </FieldLabel>
+                    <Textarea
+                      id={`${id}-description`}
+                      rows={3}
+                      maxLength={2000}
+                      value={field.state.value}
+                      disabled={locked || pending}
+                      aria-invalid={!!errors.description}
+                      aria-describedby={`${id}-description-error`}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => {
+                        field.handleChange(e.target.value);
+                        setErrors({});
+                      }}
+                    />
+                    <FieldError id={`${id}-description-error`}>
+                      {errors.description?.[0]}
+                    </FieldError>
+                  </Field>
+                )}
+              </form.Field>
+              {editing && (
+                <form.Field name="isActive">
+                  {(field) => (
+                    <Field orientation="horizontal">
+                      <div className="flex flex-1 flex-col gap-1">
+                        <FieldLabel htmlFor={`${id}-active`}>
+                          Active room
+                        </FieldLabel>
+                        <FieldDescription>
+                          Available as a judging location.
+                        </FieldDescription>
+                      </div>
+                      <Switch
+                        id={`${id}-active`}
+                        checked={field.state.value}
+                        disabled={locked || pending}
+                        onCheckedChange={field.handleChange}
+                      />
+                    </Field>
+                  )}
+                </form.Field>
+              )}
+            </FieldGroup>
+          </RoomFormPanel>
+          <RoomFormPanel editing={editing} step={step} value="spots">
+            <div className="flex flex-col gap-6">
+              {editing && (
+                <Alert variant="warning">
+                  <RiAlertLine aria-hidden="true" />
+                  <AlertTitle>Project numbers may change</AlertTitle>
+                  <AlertDescription>
+                    Saving room changes may reassign existing project numbers
+                    and locations. Review the spot counts carefully before
+                    saving.
+                  </AlertDescription>
+                </Alert>
+              )}
               <form.Field name="tracks">
                 {(field) => (
-                  <RoomRangesForm
+                  <RoomCapacitiesForm
                     value={field.state.value}
                     onChange={(next) => {
                       field.handleChange(next);
@@ -352,23 +370,23 @@ function RoomConfigurationForm({
                   />
                 )}
               </form.Field>
-            </RoomFormPanel>
-          </RoomFormPanels>
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-        </div>
+            </div>
+          </RoomFormPanel>
+        </RoomFormTabs>
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
       </DialogBody>
       <DialogFooter className="shrink-0 sm:justify-between sm:px-10 sm:py-4">
         <div className="flex gap-2">
-          {!editing && screen === 'ranges' && (
+          {!editing && step === 'spots' && (
             <Button
               type="button"
               variant="secondary"
               disabled={pending}
-              onClick={() => changeScreen('details')}
+              onClick={() => changeStep('details')}
             >
               <RiArrowLeftLine data-icon="inline-start" />
               Back
@@ -383,7 +401,7 @@ function RoomConfigurationForm({
             Cancel
           </Button>
         </div>
-        {!editing && screen === 'details' ? (
+        {!editing && step === 'details' ? (
           <Button
             type="submit"
             disabled={locked || pending || !values.name.trim()}
@@ -405,21 +423,21 @@ function RoomConfigurationForm({
   );
 }
 
-function RoomFormPanels({
+function RoomFormTabs({
   editing,
-  screen,
-  onScreenChange,
+  step,
+  onStepChange,
   children,
 }: {
   editing: boolean;
-  screen: 'details' | 'ranges';
-  onScreenChange: (screen: 'details' | 'ranges') => void;
+  step: 'details' | 'spots';
+  onStepChange: (step: 'details' | 'spots') => void;
   children: ReactNode;
 }) {
   return editing ? (
     <Tabs
-      value={screen}
-      onValueChange={(value) => onScreenChange(value as 'details' | 'ranges')}
+      value={step}
+      onValueChange={(value) => onStepChange(value as 'details' | 'spots')}
       className="min-h-0 flex-1 gap-6"
     >
       {children}
@@ -428,26 +446,26 @@ function RoomFormPanels({
     <>{children}</>
   );
 }
+
 function RoomFormPanel({
   editing,
-  screen,
+  step,
   value,
   children,
 }: {
   editing: boolean;
-  screen: 'details' | 'ranges';
-  value: 'details' | 'ranges';
+  step: 'details' | 'spots';
+  value: 'details' | 'spots';
   children: ReactNode;
 }) {
   return editing ? (
     <TabsContent
       value={value}
-      forceMount
-      className="min-h-0 overflow-y-auto overscroll-contain pb-1 data-[state=inactive]:hidden"
+      className="min-h-0 overflow-y-auto overscroll-contain pb-1"
     >
       {children}
     </TabsContent>
-  ) : (
-    <div className={cn(screen !== value && 'hidden')}>{children}</div>
-  );
+  ) : step === value ? (
+    <>{children}</>
+  ) : null;
 }

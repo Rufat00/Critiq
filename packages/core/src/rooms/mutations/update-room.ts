@@ -28,8 +28,7 @@ export const updateRoom = createMutation({
     });
     if (input.tracks !== undefined)
       await setRoomTrackAccess(ctx, { roomId: room.id, tracks: input.tracks });
-    else if (before.isActive !== after.isActive)
-      await reassignProjectLocations(ctx);
+    else await reassignProjectLocations(ctx);
     return { id: room.id, before, after };
   },
   {

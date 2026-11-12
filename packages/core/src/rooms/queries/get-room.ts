@@ -22,10 +22,7 @@ export const getRoom = createQuery({
           trackId: true,
           isActive: true,
           track: { select: { category: { select: { name: true } } } },
-          tableRanges: {
-            orderBy: [{ fromNumber: 'asc' }, { toNumber: 'asc' }],
-            select: { fromNumber: true, toNumber: true },
-          },
+          capacity: true,
         },
       },
       projects: {
@@ -39,6 +36,7 @@ export const getRoom = createQuery({
           id: true,
           name: true,
           tableNumber: true,
+          trackId: true,
           track: { select: { category: { select: { name: true } } } },
         },
       },

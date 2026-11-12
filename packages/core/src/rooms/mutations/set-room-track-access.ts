@@ -34,29 +34,24 @@ export const setRoomTrackAccess = createMutation({
         trackId: true,
         sortOrder: true,
         isActive: true,
-        tableRanges: { select: { fromNumber: true, toNumber: true } },
+        capacity: true,
       },
     });
     await ctx.db.trackRoom.deleteMany({
       where: { roomId: input.roomId, trackId: { notIn: ids } },
     });
     for (const track of input.tracks) {
-      // Keep existing rotation order and activation state when editing ranges.
-      const link = await ctx.db.trackRoom.upsert({
+      await ctx.db.trackRoom.upsert({
         where: {
           trackId_roomId: { trackId: track.trackId, roomId: input.roomId },
         },
-        create: { trackId: track.trackId, roomId: input.roomId },
-        update: {},
-        select: { id: true },
+        create: {
+          trackId: track.trackId,
+          roomId: input.roomId,
+          capacity: track.capacity,
+        },
+        update: { capacity: track.capacity },
       });
-      await ctx.db.trackRoomTableRange.deleteMany({
-        where: { trackRoomId: link.id },
-      });
-      if (track.ranges.length)
-        await ctx.db.trackRoomTableRange.createMany({
-          data: track.ranges.map((r) => ({ ...r, trackRoomId: link.id })),
-        });
     }
     await reassignProjectLocations(ctx);
     return { id: input.roomId, before, after: input.tracks };

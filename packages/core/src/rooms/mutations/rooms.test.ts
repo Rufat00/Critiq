@@ -5,6 +5,7 @@ process.env.DATABASE_URL ??=
   'postgresql://test:test@127.0.0.1:5432/critiq_test';
 const { createRoom } = await import('./create-room');
 const { updateRoom } = await import('./update-room');
+const { deleteRoom } = await import('./delete-room');
 const { setRoomTrackAccess } = await import('./set-room-track-access');
 const { getRoom } = await import('../queries/get-room');
 const { listRooms } = await import('../queries/list-rooms');
@@ -23,8 +24,9 @@ type Link = {
   trackId: string;
   sortOrder: number;
   isActive: boolean;
+  capacity: number;
 };
-type Range = { trackRoomId: string; fromNumber: number; toNumber: number };
+
 function fixture({ status = 'DRAFT', failAudit = false } = {}) {
   let state = {
     rooms: [
@@ -43,9 +45,9 @@ function fixture({ status = 'DRAFT', failAudit = false } = {}) {
         trackId: 'track-a',
         sortOrder: 7,
         isActive: false,
+        capacity: 5,
       },
     ] as Link[],
-    ranges: [{ trackRoomId: 'link', fromNumber: 1, toNumber: 5 }] as Range[],
     audits: [] as unknown[],
   };
   function client(s: typeof state) {
@@ -61,6 +63,17 @@ function fixture({ status = 'DRAFT', failAudit = false } = {}) {
         }),
       },
       room: {
+        delete: async ({
+          where,
+        }: {
+          where: { id: string; hackathonId: string };
+        }) => {
+          s.rooms = s.rooms.filter(
+            (room) =>
+              room.id !== where.id || room.hackathonId !== where.hackathonId,
+          );
+          s.links = s.links.filter((link) => link.roomId !== where.id);
+        },
         findFirst: async ({
           where,
         }: {
@@ -126,10 +139,7 @@ function fixture({ status = 'DRAFT', failAudit = false } = {}) {
         findMany: async ({ where }: { where: { roomId: string } }) =>
           s.links
             .filter((l) => l.roomId === where.roomId)
-            .map((l) => ({
-              ...l,
-              tableRanges: s.ranges.filter((r) => r.trackRoomId === l.id),
-            })),
+            .map((l) => ({ ...l })),
         deleteMany: async ({
           where,
         }: {
@@ -141,9 +151,6 @@ function fixture({ status = 'DRAFT', failAudit = false } = {}) {
               !where.trackId.notIn.includes(l.trackId),
           );
           s.links = s.links.filter((l) => !removed.includes(l));
-          s.ranges = s.ranges.filter(
-            (r) => !removed.some((l) => l.id === r.trackRoomId),
-          );
         },
         upsert: async ({
           where,
@@ -151,10 +158,9 @@ function fixture({ status = 'DRAFT', failAudit = false } = {}) {
           update,
         }: {
           where: { trackId_roomId: { trackId: string; roomId: string } };
-          create: { trackId: string; roomId: string };
-          update: unknown;
+          create: { trackId: string; roomId: string; capacity: number };
+          update: { capacity: number };
         }) => {
-          assert.deepEqual(update, {});
           let link = s.links.find(
             (l) =>
               l.trackId === where.trackId_roomId.trackId &&
@@ -169,17 +175,8 @@ function fixture({ status = 'DRAFT', failAudit = false } = {}) {
             };
             s.links.push(link);
           }
+          Object.assign(link, update);
           return link;
-        },
-      },
-      trackRoomTableRange: {
-        deleteMany: async ({ where }: { where: { trackRoomId: string } }) => {
-          s.ranges = s.ranges.filter(
-            (r) => r.trackRoomId !== where.trackRoomId,
-          );
-        },
-        createMany: async ({ data }: { data: Range[] }) => {
-          s.ranges.push(...data);
         },
       },
       auditLog: {
@@ -229,12 +226,9 @@ const access = {
   tracks: [
     {
       trackId: 'track-a',
-      ranges: [
-        { fromNumber: 1, toNumber: 8 },
-        { fromNumber: 20, toNumber: 22 },
-      ],
+      capacity: 11,
     },
-    { trackId: 'track-b', ranges: [{ fromNumber: 30, toNumber: 35 }] },
+    { trackId: 'track-b', capacity: 6 },
   ],
 };
 test('room creation and edits trim values, preserve scope, toggle status and audit', async () => {
@@ -268,6 +262,7 @@ test('all room operations reject judges and system actors', async () => {
       () => createRoom(ctx, { name: 'Hall' }),
       () => updateRoom(ctx, { roomId: 'room', name: 'Hall', isActive: false }),
       () => setRoomTrackAccess(ctx, access),
+      () => deleteRoom(ctx, { roomId: 'room' }),
       () => getRoom(ctx, { roomId: 'room' }),
       () => listRooms(ctx, {}),
     ])
@@ -290,6 +285,7 @@ test('configuration writes reject non-draft stages and foreign room/track IDs', 
       'INVALID_STATE',
     );
     await rejects(setRoomTrackAccess(f.ctx, access), 'INVALID_STATE');
+    await rejects(deleteRoom(f.ctx, { roomId: 'room' }), 'INVALID_STATE');
     assert.equal(f.read().audits.length, 0);
   }
   const f = fixture();
@@ -308,68 +304,45 @@ test('configuration writes reject non-draft stages and foreign room/track IDs', 
   await rejects(
     setRoomTrackAccess(f.ctx, {
       roomId: 'room',
-      tracks: [{ trackId: 'foreign', ranges: [] }],
+      tracks: [{ trackId: 'foreign', capacity: 0 }],
     }),
     'NOT_FOUND',
   );
+  await rejects(deleteRoom(f.ctx, { roomId: 'foreign' }), 'NOT_FOUND');
+  await rejects(
+    deleteRoom({ ...f.ctx, hackathonId: 'foreign' }, { roomId: 'room' }),
+    'INVALID_STATE',
+  );
   assert.equal(f.read().audits.length, 0);
 });
-test('ranges support gaps and access without ranges while preserving rotation metadata', async () => {
+test('capacity edits and zero spots preserve rotation metadata, and clearing access removes links', async () => {
   const f = fixture();
-  const input = structuredClone(access);
-  input.tracks[0]!.ranges.push({ fromNumber: 12, toNumber: 15 });
-  await setRoomTrackAccess(f.ctx, input);
-  assert.equal(f.read().ranges.length, 4);
+  await setRoomTrackAccess(f.ctx, access);
+  assert.equal(f.read().links[0]!.capacity, 11);
   assert.equal(f.read().links[0]!.sortOrder, 7);
   assert.equal(f.read().links[0]!.isActive, false);
   await setRoomTrackAccess(f.ctx, {
     roomId: 'room',
-    tracks: [{ trackId: 'track-a', ranges: [] }],
+    tracks: [{ trackId: 'track-a', capacity: 0 }],
   });
   assert.equal(f.read().links.length, 1);
-  assert.equal(f.read().ranges.length, 0);
+  assert.equal(f.read().links[0]!.capacity, 0);
   await setRoomTrackAccess(f.ctx, { roomId: 'room', tracks: [] });
   assert.equal(f.read().links.length, 0);
   assert.equal(f.read().audits.length, 3);
 });
-test('overlapping table ranges within or across tracks are rejected without writing', async () => {
-  for (const sameTrack of [true, false]) {
-    const f = fixture();
-    const before = structuredClone(f.read());
-    const ranges = [
-      { fromNumber: 1, toNumber: 8 },
-      { fromNumber: 8, toNumber: 12 },
-    ];
-    await rejects(
-      setRoomTrackAccess(f.ctx, {
-        roomId: 'room',
-        tracks: sameTrack
-          ? [{ trackId: 'track-a', ranges }]
-          : [
-              { trackId: 'track-a', ranges: [ranges[0]!] },
-              { trackId: 'track-b', ranges: [ranges[1]!] },
-            ],
-      }),
-      'VALIDATION_ERROR',
-    );
-    assert.deepEqual(f.read(), before);
-  }
-});
-test('invalid numbers, reversed ranges and exact duplicates fail validation without writing', async () => {
+test('negative, fractional, oversized spots and duplicate tracks fail without writes', async () => {
   const f = fixture();
-  for (const range of [
-    { fromNumber: 0, toNumber: 1 },
-    { fromNumber: 2, toNumber: 1 },
-    { fromNumber: 1.5, toNumber: 3 },
-    { fromNumber: 1, toNumber: 2147483648 },
-  ])
+  const before = structuredClone(f.read());
+  for (const capacity of [-1, 1.5, 2147483648]) {
     await rejects(
       setRoomTrackAccess(f.ctx, {
         roomId: 'room',
-        tracks: [{ trackId: 'track-a', ranges: [range] }],
+        tracks: [{ trackId: 'track-a', capacity }],
       }),
       'VALIDATION_ERROR',
     );
+  }
   await rejects(
     setRoomTrackAccess(f.ctx, {
       ...access,
@@ -377,26 +350,10 @@ test('invalid numbers, reversed ranges and exact duplicates fail validation with
     }),
     'VALIDATION_ERROR',
   );
-  await rejects(
-    setRoomTrackAccess(f.ctx, {
-      roomId: 'room',
-      tracks: [
-        {
-          trackId: 'track-a',
-          ranges: [
-            { fromNumber: 1, toNumber: 2 },
-            { fromNumber: 1, toNumber: 2 },
-          ],
-        },
-      ],
-    }),
-    'VALIDATION_ERROR',
-  );
   await rejects(createRoom(f.ctx, { name: ' ' }), 'VALIDATION_ERROR');
-  assert.equal(f.read().audits.length, 0);
-  assert.equal(f.read().ranges.length, 1);
+  assert.deepEqual(f.read(), before);
 });
-test('audit failure rolls back room creation, status edits, link removals and range writes', async () => {
+test('audit failure rolls back room creation, status edits, link removals and capacity writes', async () => {
   const f = fixture({ failAudit: true });
   const before = structuredClone(f.read());
   await rejects(createRoom(f.ctx, { name: 'New' }), 'INTERNAL_SERVER_ERROR');
@@ -405,6 +362,7 @@ test('audit failure rolls back room creation, status edits, link removals and ra
     'INTERNAL_SERVER_ERROR',
   );
   await rejects(setRoomTrackAccess(f.ctx, access), 'INTERNAL_SERVER_ERROR');
+  await rejects(deleteRoom(f.ctx, { roomId: 'room' }), 'INTERNAL_SERVER_ERROR');
   await rejects(
     setRoomTrackAccess(f.ctx, { roomId: 'room', tracks: [] }),
     'INTERNAL_SERVER_ERROR',
@@ -428,22 +386,30 @@ test('concurrent duplicate creation commits one room and audit, returns a safe c
   assert.equal(f.read().audits.length, 1);
 });
 
-test('Overall uses the same room access and sparse range writes as other tracks', async () => {
+test('Overall uses the same room access and capacity writes as other tracks', async () => {
   const f = fixture();
   await setRoomTrackAccess(f.ctx, {
     roomId: 'room',
     tracks: [
       {
         trackId: 'overall-track',
-        ranges: [
-          { fromNumber: 1, toNumber: 4 },
-          { fromNumber: 9, toNumber: 12 },
-        ],
+        capacity: 8,
       },
     ],
   });
   assert.equal(f.read().links.length, 1);
   assert.equal(f.read().links[0]!.trackId, 'overall-track');
-  assert.equal(f.read().ranges.length, 2);
+  assert.equal(f.read().links[0]!.capacity, 8);
+  assert.equal(f.read().audits.length, 1);
+});
+
+test('deleting a room removes its track capacities and audits the original room state', async () => {
+  const f = fixture();
+  const deleted = await deleteRoom(f.ctx, { roomId: 'room' });
+  assert.equal(deleted.isActive, true);
+  assert.equal(f.read().rooms.length, 0);
+  assert.equal(f.read().links.length, 0);
+  assert.equal(f.read().audits.length, 1);
+  await rejects(deleteRoom(f.ctx, { roomId: 'room' }), 'NOT_FOUND');
   assert.equal(f.read().audits.length, 1);
 });

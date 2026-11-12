@@ -1,6 +1,6 @@
 # Critiq data model — first implementation draft
 
-`schema.prisma` targets PostgreSQL, Prisma, and Better Auth. `JudgingCategory` owns each competition's judging method, rubric, judge access, and results. Categories of kind `OVERALL` or `TRACK` each have exactly one `Track` record, which owns project membership, room access, and table ranges. Overall is created automatically and protected against deletion or conversion. Every project belongs to exactly one explicit track; projects in specialized tracks do not enter Overall. Challenges use opt-in project entries and explicit `ChallengeTrack` eligibility links, including for Overall. Future tracks are never enrolled automatically.
+`schema.prisma` targets PostgreSQL, Prisma, and Better Auth. `JudgingCategory` owns each competition's judging method, rubric, judge access, and results. Categories of kind `OVERALL` or `TRACK` each have exactly one `Track` record, which owns project membership, room access, and per-room capacity. Overall is created automatically and protected against deletion or conversion. Every project belongs to exactly one explicit track; projects in specialized tracks do not enter Overall. Challenges use opt-in project entries and explicit `ChallengeTrack` eligibility links, including for Overall. Future tracks are never enrolled automatically.
 
 ## Important application/database invariants
 
@@ -8,8 +8,8 @@
 - One installation row (`id = 1`), one hackathon per deployment, and exactly one Overall category; enforce with a seed/transaction and SQL constraints where appropriate.
 - Category `kind` must match subtype: OVERALL and TRACK each have one Track row; CHALLENGE has one Challenge row. Deferred SQL triggers enforce subtype completeness and same-hackathon ownership at commit.
 - Track, project, challenge and room must all belong to the same hackathon; cross-table multi-hop invariants require service validation or composite foreign keys.
-- TrackRoomTableRange bounds must be positive and `fromNumber <= toNumber`; ranges within a room must not overlap, within or across tracks.
-- Automatic physical placement fills active room ranges in database `registrationOrder`, with no duplicate room/table slots; capacity overflow remains unassigned.
+- `TrackRoom.capacity` is a nonnegative number of spots reserved for one track in one room.
+- Automatic placement fills active room capacities in database `registrationOrder`. Project numbers use one global contiguous sequence across tracks and rooms; track capacity overflow remains unassigned. Deferred uniqueness enforces global project numbers at commit.
 - Every project has a non-null `trackId`. Eligibility for a track, including Overall, compares that ID directly. Tracks with projects cannot be deleted; move the projects first.
 - Challenge eligibility and `ProjectChallenge` opt-in must be checked when selecting projects.
 - `scoreScale` is 5 or 10; criterion scores are within [0, scoreScale]; weights nonnegative; freeze rubric definitions after judging starts.

@@ -5,7 +5,7 @@ process.env.DATABASE_URL ??=
   'postgresql://test:test@127.0.0.1:5432/critiq_test';
 const { validateRoomTrackCapacity } =
   await import('./validate-room-track-capacity');
-test('capacity includes unassigned and current-room projects, allows continued numbers and rejects excess coverage', async () => {
+test('capacity includes unassigned and current-room projects, allows zero and rejects excess spots', async () => {
   const ctx = {
     hackathonId: 'event',
     db: {
@@ -22,21 +22,15 @@ test('capacity includes unassigned and current-room projects, allows continued n
     },
   } as unknown as AppContext;
   await validateRoomTrackCapacity(ctx, 'room', [
-    { trackId: 'overall', ranges: [{ fromNumber: 25, toNumber: 101 }] },
+    { trackId: 'overall', capacity: 77 },
   ]);
   await assert.rejects(
     validateRoomTrackCapacity(ctx, 'room', [
-      { trackId: 'overall', ranges: [{ fromNumber: 25, toNumber: 102 }] },
+      { trackId: 'overall', capacity: 78 },
     ]),
     { code: 'VALIDATION_ERROR' },
   );
   await validateRoomTrackCapacity(ctx, 'room', [
-    {
-      trackId: 'overall',
-      ranges: [
-        { fromNumber: 25, toNumber: 70 },
-        { fromNumber: 50, toNumber: 101 },
-      ],
-    },
+    { trackId: 'overall', capacity: 0 },
   ]);
 });

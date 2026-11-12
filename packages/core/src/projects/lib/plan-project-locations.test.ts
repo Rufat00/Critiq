@@ -10,106 +10,144 @@ const projects = (count: number, trackId = 'overall') =>
     trackId,
   }));
 const room = (
-  ranges: number[][],
+  capacity: number,
   roomId = 'hall',
   trackId = 'overall',
-): PlacementRoom => ({
-  roomId,
-  trackId,
-  tableRanges: ranges.map(([fromNumber, toNumber]) => ({
-    fromNumber: fromNumber!,
-    toNumber: toNumber!,
-  })),
-});
+): PlacementRoom => ({ roomId, trackId, capacity });
 
-test('registration order fills ascending sparse ranges without repeating overlapping tables', () => {
-  const placed = planProjectLocations(projects(8), [
-    room([
-      [9, 10],
-      [1, 3],
-      [2, 5],
-    ]),
-  ]);
-  assert.deepEqual(
-    placed.map((p) => p.tableNumber),
-    [1, 2, 3, 4, 5, 9, 10, null],
-  );
-  assert.equal(placed[7]!.roomId, null);
-});
-test('configured room order determines which room fills first', () => {
-  const placed = planProjectLocations(projects(4), [
-    room([[7, 8]], 'first'),
-    room([[1, 3]], 'second'),
+test('registration order fills spot counts across rooms with one global sequence', () => {
+  const placed = planProjectLocations(projects(5), [
+    room(2, 'first'),
+    room(2, 'second'),
   ]);
   assert.deepEqual(
     placed.map((p) => [p.roomId, p.tableNumber]),
     [
-      ['first', 7],
-      ['first', 8],
-      ['second', 1],
-      ['second', 2],
+      ['first', 1],
+      ['first', 2],
+      ['second', 3],
+      ['second', 4],
+      [null, null],
     ],
   );
 });
-test('tracks share physical tables without duplicate locations, with earlier registrations first', () => {
-  const entered = [
-    { id: 'first-ai', trackId: 'ai' },
-    { id: 'first-overall', trackId: 'overall' },
-    { id: 'second-ai', trackId: 'ai' },
-    { id: 'second-overall', trackId: 'overall' },
+test('101 projects across tracks and rooms receive exactly numbers 1 through 101', () => {
+  const entered = projects(101).map((project, index) => ({
+    ...project,
+    trackId: index % 2 ? 'ai' : 'overall',
+  }));
+  const config = [
+    room(25, 'a'),
+    room(26, 'b'),
+    room(30, 'a', 'ai'),
+    room(20, 'b', 'ai'),
   ];
-  const placed = planProjectLocations(entered, [
-    room([[1, 3]]),
-    room([[1, 3]], 'hall', 'ai'),
-  ]);
+  const before = structuredClone(config);
+  const placed = planProjectLocations(entered, config);
   assert.deepEqual(
-    placed.map((p) => p.tableNumber),
-    [1, 2, 3, null],
+    placed.map((project) => project.tableNumber).sort((a, b) => a! - b!),
+    Array.from({ length: 101 }, (_, index) => index + 1),
   );
-});
-test('unconfigured tracks and exhausted ranges stay unassigned', () => {
-  assert.deepEqual(planProjectLocations(projects(1), []), [
-    { id: 'project-1', roomId: null, tableNumber: null },
-  ]);
-  assert.equal(
-    planProjectLocations(projects(1), [room([[1, 10]], 'hall', 'other')])[0]!
-      .roomId,
-    null,
-  );
-});
-test('table numbers are local to each room and large ranges are consumed lazily', () => {
+  assert.equal(placed.filter((project) => project.roomId === 'a').length, 55);
   assert.deepEqual(
-    planProjectLocations(projects(2), [
-      room([[1, 1]], 'a'),
-      room([[1, 1]], 'b'),
-    ]).map((p) => [p.roomId, p.tableNumber]),
+    placed
+      .filter((project) => project.roomId === 'a')
+      .map((project) => project.tableNumber),
+    Array.from({ length: 55 }, (_, index) => index + 1),
+  );
+  assert.deepEqual(
+    placed
+      .filter((project) => project.roomId === 'b')
+      .map((project) => project.tableNumber),
+    Array.from({ length: 46 }, (_, index) => index + 56),
+  );
+  assert.deepEqual(config, before);
+});
+
+test('mixed tracks get consecutive room blocks after a room is deleted', () => {
+  const entered = projects(8).map((project, index) => ({
+    ...project,
+    trackId: index % 2 ? 'ai' : 'overall',
+  }));
+  const config = [
+    room(1, 'a'),
+    room(3, 'a', 'ai'),
+    room(1, 'deleted'),
+    room(3, 'b'),
+    room(1, 'b', 'ai'),
+  ];
+  const placed = planProjectLocations(
+    entered,
+    config.filter((link) => link.roomId !== 'deleted'),
+  );
+  assert.deepEqual(
+    placed
+      .filter((project) => project.roomId === 'a')
+      .map((project) => [project.id, project.tableNumber]),
     [
-      ['a', 1],
-      ['b', 1],
+      ['project-1', 1],
+      ['project-2', 2],
+      ['project-4', 3],
+      ['project-6', 4],
     ],
   );
   assert.deepEqual(
-    planProjectLocations(projects(3), [room([[0, 2147483647]])]).map(
-      (p) => p.tableNumber,
-    ),
-    [0, 1, 2],
+    placed
+      .filter((project) => project.roomId === 'b')
+      .map((project) => [project.id, project.tableNumber]),
+    [
+      ['project-3', 5],
+      ['project-5', 6],
+      ['project-7', 7],
+      ['project-8', 8],
+    ],
   );
 });
-test('recalculation compacts deleted or moved projects deterministically', () => {
-  const original = projects(3);
-  const configuration = [room([[1, 3]])];
+test('zero spots, missing tracks and track-specific overflow remain unassigned without numbering gaps', () => {
+  const placed = planProjectLocations(
+    [
+      { id: 'waiting', trackId: 'missing' },
+      { id: 'ai', trackId: 'ai' },
+      { id: 'overall', trackId: 'overall' },
+      { id: 'overflow', trackId: 'ai' },
+    ],
+    [room(0, 'zero', 'ai'), room(1, 'hall', 'ai'), room(1)],
+  );
+  assert.deepEqual(placed, [
+    { id: 'waiting', roomId: null, tableNumber: null },
+    { id: 'ai', roomId: 'hall', tableNumber: 1 },
+    { id: 'overall', roomId: 'hall', tableNumber: 2 },
+    { id: 'overflow', roomId: null, tableNumber: null },
+  ]);
+});
+test('capacity edits, deletions and track moves deterministically recalculate placements', () => {
+  const entered = projects(3);
+  const reduced = [room(1, 'a'), room(1, 'b')];
+  assert.deepEqual(
+    planProjectLocations(entered, reduced).map((p) => p.tableNumber),
+    [1, 2, null],
+  );
+  assert.deepEqual(planProjectLocations(entered.slice(1), reduced), [
+    { id: 'project-2', roomId: 'a', tableNumber: 1 },
+    { id: 'project-3', roomId: 'b', tableNumber: 2 },
+  ]);
   assert.deepEqual(
     planProjectLocations(
-      original.filter((p) => p.id !== 'project-1'),
-      configuration,
-    ).map((p) => [p.id, p.tableNumber]),
-    [
-      ['project-2', 1],
-      ['project-3', 2],
-    ],
+      [{ ...entered[0]!, trackId: 'ai' }, ...entered.slice(1)],
+      reduced,
+    ).map((p) => p.tableNumber),
+    [null, 1, 2],
   );
   assert.deepEqual(
-    planProjectLocations(original, configuration),
-    planProjectLocations(original, configuration),
+    planProjectLocations(entered, reduced),
+    planProjectLocations(entered, reduced),
+  );
+});
+test('large capacities do not expand into slot arrays', () => {
+  assert.deepEqual(
+    planProjectLocations(projects(3), [room(2147483647)]).map(
+      (p) => p.tableNumber,
+    ),
+    [1, 2, 3],
   );
 });

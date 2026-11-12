@@ -99,7 +99,7 @@ test(
             data: {
               trackId: category.track!.id,
               roomId: room.id,
-              tableRanges: { create: { fromNumber: 1, toNumber: 5 } },
+              capacity: 5,
             },
           });
           const project = await tx.project.create({

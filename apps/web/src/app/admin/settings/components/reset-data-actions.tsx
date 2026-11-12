@@ -53,7 +53,7 @@ const resetOptions = [
     section: 'rooms',
     label: 'Reset room data',
     description:
-      'Permanently delete all rooms, table ranges, and room access. Projects are kept with their room and table assignments cleared.',
+      'Permanently delete all rooms, track capacities, and room access. Projects are kept with their room assignments and project numbers cleared.',
     acknowledgment:
       'I understand that all rooms and their related data will be permanently deleted and cannot be restored.',
   },

@@ -17,24 +17,13 @@ export async function validateRoomTrackCapacity(
         OR: [{ roomId: null }, { roomId }],
       },
     });
-    let end = -1,
-      covered = 0;
-    for (const range of [...track.ranges].sort(
-      (a, b) => a.fromNumber - b.fromNumber,
-    )) {
-      covered += Math.max(
-        0,
-        range.toNumber - Math.max(end + 1, range.fromNumber) + 1,
-      );
-      end = Math.max(end, range.toNumber);
-    }
-    if (covered > remaining)
+    if (track.capacity > remaining)
       throw new AppError(
         AppErrorCode.VALIDATION_ERROR,
-        'This track has fewer remaining projects than the selected table ranges.',
+        'This track has fewer available projects than the selected spots.',
         {
-          [`tracks.${index}.ranges`]: [
-            `Only ${remaining} projects are available for this room. Reduce the ranges or refresh to see current availability.`,
+          [`tracks.${index}.capacity`]: [
+            `Only ${remaining} projects are available for this room. Reduce the spots or refresh to see current availability.`,
           ],
         },
       );

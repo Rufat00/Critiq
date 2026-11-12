@@ -39,6 +39,7 @@ export const listRooms = createQuery({
               select: {
                 trackId: true,
                 isActive: true,
+                capacity: true,
                 track: { select: { category: { select: { name: true } } } },
               },
             },

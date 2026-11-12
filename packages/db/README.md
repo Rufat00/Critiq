@@ -65,7 +65,7 @@ unique constraints. A subsequent migration enforces:
 - Installation ID must be 1; the seed creates the singleton and Overall category.
 - Score scale is 5 or 10; weights and scores are nonnegative.
 - Positive judging timers/minimum coverage; optional target is at least the minimum.
-- Valid room rotation percentage, table ranges, table numbers, and assignment attempts.
+- Valid room rotation percentage, room capacities, project numbers, and assignment attempts.
 - Rankings are 1-based; schema uniqueness prevents duplicate ranking positions.
 - At most one active assignment per judge/category.
 - Valid invitation maximum/use counts.
@@ -75,7 +75,7 @@ records. Overall has a required Track and is protected against deletion and conv
 
 Core must still enforce the supplied cross-record rules: common hackathon
 ownership for projects, room links and challenge links, eligibility and conflicts, current-room
-validity, non-overlapping table ranges where required, rubric locking and score
+validity, room capacity, rubric locking and score
 upper bounds for the hackathon's scale, exact assignment/evaluation identity,
 completed-assignment evaluation existence, method compatibility, invitation
 redemption authorization, atomic allocation, and permanent bootstrap claims.
@@ -103,7 +103,7 @@ Apply committed migrations with `pnpm db:deploy` before opening the admin home.
 Category participation (`JudgingCategory.isEnabled`) is separate from `isVisible`;
 hiding a category does not remove its readiness requirements.
 
-The admin home shows counts for tracks and challenges (excluding Overall), active
+The admin home shows counts for tracks (including Overall) and challenges, active
 projects, active judges, and active rooms. Marking Ready requires successful
 server-side readiness validation and acknowledgment of any warnings; there are
 no manual section completions. Marking Ready does not start judging.
@@ -158,32 +158,41 @@ the matrix reflect the saved membership after revalidation.
 
 ## Automatic project locations
 
-Projects fill active room ranges automatically in Draft. `Project.registrationOrder`
-is a database sequence, so CSV rows retain their insertion order even when their
-creation timestamps match. The migration initializes existing projects by
-`createdAt`, then ID; new projects always receive the next sequence value.
+Rooms store a nonnegative `TrackRoom.capacity` for each track, including Overall.
+The create/edit form shows a single slider per track. New capacities start at zero;
+edits load saved counts. Each slider is capped at the track's unassigned projects
+plus those already in the edited room. The server rechecks availability under the
+Draft lock, so stale submissions fail without partial room or placement writes.
 
-Placement processes projects in registration order, using each track's active
-room links ordered by `sortOrder`, room creation time, and room ID. Within each
-room, table numbers run from lowest to highest across the configured ranges.
-Overlapping definitions remain allowed; a physical room/table slot is used only
-once, with earlier registrations taking precedence across tracks. Projects beyond
-available capacity keep both `roomId` and `tableNumber` null.
+Projects fill active track/room capacities in `Project.registrationOrder`.
+Rooms follow `sortOrder`, room creation time, room ID, then link ID. After placement, each room receives a consecutive block from the global number
+sequence, and its projects are numbered in registration order across tracks.
+Room order follows the first occurrence in the configured placement order; empty
+rooms consume no numbers. With enough capacity for each track, 101 projects receive numbers 1–101.
+Projects beyond their track's capacity keep both location fields null; placed
+projects never have numbering gaps. `Project.tableNumber` stores this global
+project number. A deferred unique constraint on `(hackathonId, tableNumber)`
+allows atomic renumbering while enforcing uniqueness at commit.
 
-Creation, imports, project updates/deletion, range edits, and room activation
-changes recalculate placement under the same Draft lock. Changed locations and
-their audits commit with the initiating operation. Repeating unchanged
-configuration does not write duplicate placement audits. Changes that would move
-a project with judging activity are rejected. Deletion compacts remaining
-projects; moving tracks keeps the project's original registration order.
+Creation, imports, project updates/deletion, spot edits, and every room edit
+recalculate placement inside the initiating transaction. Changes and their audits
+commit together. Unchanged placements do not create duplicate placement audits.
+Projects with judging activity cannot be moved or renumbered. The edit form warns
+that saving may reassign existing project numbers and locations. Room rows expand
+to show track capacity usage and actual project numbers colored by track; project names are
+available through hover, keyboard focus, or tap.
 
-Room creation and editing save room details and table ranges in one transaction.
-The editor offers track pills and a two-thumb slider. Range coverage is capped
-at projects that are unassigned or already placed in the room being edited;
-table ranges in a room cannot overlap, within or across tracks. Numbering may continue above that count
-(for example, 25–101 covers 77 projects). The server rechecks capacity under the
-Draft lock to reject stale form submissions without partial writes. Room rows
-expand inline to show the table layout; occupied tables expose project names
-through hover, focus, or tap tooltips.
-The preview shows only configured tables, with the total equal to the combined
-range sizes. It has no fixed table count; large layouts use pagination.
+The `20261112000000_room_capacities` migration replaces table ranges directly.
+It refuses databases containing ranges or existing project locations, so it never
+silently discards an existing room configuration. A configured disposable development
+database requires an explicitly approved reset before migration. Do not reset a
+shared or production database. Apply migrations with `pnpm db:deploy`; regenerate
+the client with `pnpm db:generate`.
+
+Room deletion is available beside Edit inside an expanded room and requires
+confirmation. An organizer may delete rooms only in Draft. Core first deactivates
+the room and recalculates project locations, then deletes the room and track
+capacities. Projects are retained; overflow becomes unassigned and numbering is
+compacted globally. Projects with judging activity block changes to their locations.
+Deletion and placement audits commit together, preserving original room IDs in
+placement snapshots; any failure rolls back the entire operation.

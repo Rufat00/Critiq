@@ -26,6 +26,7 @@ import {
 import { cn } from '@/lib/utils';
 import { RoomFormDialog } from './room-form-dialog';
 import { RoomExpandedPanel } from './room-expanded-panel';
+import { getTrackColor } from '../lib/get-track-color';
 
 export function RoomsSection({ data }: { data: RoomsPageData }) {
   const router = useRouter(),
@@ -50,7 +51,7 @@ export function RoomsSection({ data }: { data: RoomsPageData }) {
     <>
       <AdminHeading
         title="Rooms"
-        description="Manage judging locations and table assignments."
+        description="Manage judging locations and project locations."
       />
       {data.locked && (
         <Alert>
@@ -116,7 +117,7 @@ export function RoomsSection({ data }: { data: RoomsPageData }) {
                 ? 'Try another room name or clear your search.'
                 : p.totalItems
                   ? 'Go back to the first page to see your rooms.'
-                  : 'Add your first judging location and configure its table ranges.'
+                  : 'Add your first judging location and set spots for each track.'
             }
             action={
               data.search || p.page > 1 ? (
@@ -180,14 +181,26 @@ export function RoomsSection({ data }: { data: RoomsPageData }) {
                         {room._count.projects}
                       </TableCell>
                       <TableCell className="col-span-2 row-start-3 h-auto px-0 md:h-16 md:max-w-72 md:px-3">
-                        {room.trackRooms.length ? (
+                        {room.trackRooms.some((link) => link.capacity > 0) ? (
                           <div className="flex flex-wrap gap-1.5">
-                            {room.trackRooms.map((link) => (
-                              <Badge key={link.trackId}>
-                                {link.track.category.name}
-                                {!link.isActive && ' · Inactive'}
-                              </Badge>
-                            ))}
+                            {room.trackRooms
+                              .filter((link) => link.capacity > 0)
+                              .map((link) => (
+                                <Badge
+                                  key={link.trackId}
+                                  style={{
+                                    backgroundColor: `color-mix(in srgb, ${getTrackColor(link.trackId, data.tracks)} 18%, var(--background))`,
+                                    borderColor: getTrackColor(
+                                      link.trackId,
+                                      data.tracks,
+                                    ),
+                                  }}
+                                >
+                                  {link.track.category.name} · {link.capacity}{' '}
+                                  spots
+                                  {!link.isActive && ' · Inactive'}
+                                </Badge>
+                              ))}
                           </div>
                         ) : (
                           <span className="text-muted-foreground">
@@ -227,7 +240,15 @@ export function RoomsSection({ data }: { data: RoomsPageData }) {
                             roomId={room.id}
                             locked={data.locked || pending}
                             revision={revision}
+                            tracks={data.tracks}
                             onEdit={() => setEditor({ roomId: room.id })}
+                            onDeleted={() => {
+                              setExpandedId(null);
+                              setRevision((value) => value + 1);
+                              if (data.items.length === 1 && p.page > 1)
+                                navigate({ page: String(p.page - 1) });
+                              else router.refresh();
+                            }}
                           />
                         </TableCell>
                       </TableRow>

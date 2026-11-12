@@ -5,7 +5,7 @@ export default function Loading() {
     <>
       <AdminHeading
         title="Rooms"
-        description="Manage judging locations and table assignments."
+        description="Manage judging locations and project locations."
       />
       <div
         className="flex flex-col gap-6"

@@ -28,7 +28,6 @@ export async function readSetupSnapshot(ctx: AppContext) {
         include: {
           trackRooms: {
             orderBy: { id: 'asc' },
-            include: { tableRanges: { orderBy: { id: 'asc' } } },
           },
         },
       },

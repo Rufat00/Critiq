@@ -1,24 +1,29 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { RiDoorOpenLine, RiPencilLine } from '@remixicon/react';
-import type { RoomDetail } from '@critiq/core/rooms';
+import type { RoomDetail, RoomsOverview } from '@critiq/core/rooms';
 import { getRoomAction } from '../actions';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/empty-state';
-import { TableRangePreview } from './table-range-preview';
+import { ProjectLocationPreview } from './project-location-preview';
+import { RoomDeleteDialog } from './room-delete-dialog';
 export function RoomExpandedPanel({
   roomId,
   locked,
   revision,
+  tracks,
   onEdit,
+  onDeleted,
 }: {
   roomId: string;
   locked: boolean;
   revision: number;
+  tracks: RoomsOverview['tracks'];
   onEdit: () => void;
+  onDeleted: () => void;
 }) {
   const [room, setRoom] = useState<RoomDetail | null>(null),
     [error, setError] = useState(''),
@@ -50,19 +55,32 @@ export function RoomExpandedPanel({
           {room && (
             <>
               <Badge>{room.projects.length} projects</Badge>
-              <Badge>{room.trackRooms.length} tracks</Badge>
+              <Badge>
+                {room.trackRooms.filter((link) => link.capacity > 0).length}{' '}
+                tracks
+              </Badge>
             </>
           )}
         </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={locked || loading}
-          onClick={onEdit}
-        >
-          <RiPencilLine data-icon="inline-start" />
-          Edit room
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={locked || loading}
+            onClick={onEdit}
+          >
+            <RiPencilLine data-icon="inline-start" />
+            Edit
+          </Button>
+          {room && (
+            <RoomDeleteDialog
+              roomId={roomId}
+              name={room.name}
+              locked={locked || loading}
+              onDeleted={onDeleted}
+            />
+          )}
+        </div>
       </header>
       {error && (
         <Alert variant="destructive">
@@ -89,24 +107,13 @@ export function RoomExpandedPanel({
         </div>
       )}
       {room &&
-        (room.trackRooms.some((link) => link.tableRanges.length) ? (
-          <TableRangePreview
-            title="Layout"
-            tracks={room.trackRooms.map((link) => ({
-              trackId: link.trackId,
-              ranges: link.tableRanges,
-            }))}
-            options={room.trackRooms.map((link) => ({
-              id: link.trackId,
-              category: link.track.category,
-            }))}
-            projects={room.projects}
-          />
+        (room.trackRooms.some((link) => link.capacity > 0) ? (
+          <ProjectLocationPreview room={room} tracks={tracks} />
         ) : (
           <EmptyState
             icon={<RiDoorOpenLine />}
-            title="No table ranges"
-            description="Edit this room to configure its tracks and table ranges."
+            title="No spots configured"
+            description="Edit this room to set the number of spots for each track."
           />
         ))}
     </section>

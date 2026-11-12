@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
 
 test(
-  'Overall has explicit project, challenge and room memberships, with the same range readiness checks as other tracks',
+  'Overall has explicit project, challenge and room memberships, with the same capacity readiness checks as other tracks',
   { skip: process.env.CRITIQ_DB_INTEGRATION !== '1' },
   async () => {
     const { db } = await import('@critiq/db');
@@ -78,10 +78,7 @@ test(
             tracks: [
               {
                 trackId: overall.id,
-                ranges: [
-                  { fromNumber: 1, toNumber: 4 },
-                  { fromNumber: 9, toNumber: 12 },
-                ],
+                capacity: 8,
               },
             ],
           });
@@ -91,19 +88,17 @@ test(
           assert.equal(overview.items[0]!._count.projects, 8);
           const detail = await getRoom(ctx, { roomId: room.id });
           assert.equal(detail.projects[0]!.track.category.name, 'Overall');
-          assert.equal(detail.trackRooms[0]!.tableRanges.length, 2);
+          assert.equal(detail.trackRooms[0]!.capacity, 8);
           const locationErrors = () =>
             readSetupSnapshot(ctx).then((s) =>
               buildSetupSummary(s).blockers.filter((message) =>
-                message.includes('outside the configured'),
+                message.includes('capacity is not configured'),
               ),
             );
           assert.deepEqual(await locationErrors(), []);
           await setRoomTrackAccess(ctx, {
             roomId: room.id,
-            tracks: [
-              { trackId: overall.id, ranges: [{ fromNumber: 1, toNumber: 4 }] },
-            ],
+            tracks: [{ trackId: overall.id, capacity: 4 }],
           });
           assert.deepEqual(await locationErrors(), []);
           assert.equal(

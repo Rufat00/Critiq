@@ -90,14 +90,13 @@ export function buildSetupSummary({ hackathon: h, judges }: SetupSnapshot) {
       const trackRoom = room?.trackRooms.find(
         (r) => r.trackId === p.trackId && r.isActive,
       );
-      if (
-        !trackRoom ||
-        !trackRoom.tableRanges.some(
-          (r) => p.tableNumber! >= r.fromNumber && p.tableNumber! <= r.toNumber,
-        )
-      )
+      const placedCount = h.projects.filter(
+        (project) =>
+          project.roomId === p.roomId && project.trackId === p.trackId,
+      ).length;
+      if (!trackRoom || placedCount > trackRoom.capacity)
         blockers.push(
-          `${p.name}: table is outside the configured track room ranges.`,
+          `${p.name}: room capacity is not configured for this track.`,
         );
     }
   }

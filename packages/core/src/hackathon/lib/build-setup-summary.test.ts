@@ -49,6 +49,39 @@ test('configuration edits invalidate readiness confirmation', () => {
   assert.notEqual(buildSetupSummary(data).fingerprint, before);
 });
 
+test('readiness validates track room capacity, including occupied spots of inactive projects', () => {
+  const data = snapshot();
+  const project = data.hackathon.projects[0]!;
+  project.roomId = 'room';
+  project.tableNumber = 1;
+  data.hackathon.rooms.push({
+    id: 'room',
+    isActive: true,
+    trackRooms: [{ trackId: project.trackId, isActive: true, capacity: 1 }],
+  } as unknown as SetupSnapshot['hackathon']['rooms'][number]);
+  assert.deepEqual(buildSetupSummary(data).blockers, []);
+  data.hackathon.projects.push({
+    ...project,
+    id: 'inactive',
+    name: 'Inactive project',
+    isActive: false,
+    tableNumber: 2,
+  });
+  assert.ok(
+    buildSetupSummary(data).blockers.some((message) =>
+      message.includes('room capacity'),
+    ),
+  );
+  data.hackathon.rooms[0]!.trackRooms[0]!.capacity = 2;
+  assert.deepEqual(buildSetupSummary(data).blockers, []);
+  data.hackathon.rooms[0]!.trackRooms[0]!.isActive = false;
+  assert.ok(
+    buildSetupSummary(data).blockers.some((message) =>
+      message.includes('room capacity'),
+    ),
+  );
+});
+
 test('rubric criteria and actual assigned judge accounts are required', () => {
   const data = snapshot();
   data.hackathon.categories[0]!.method = 'RUBRIC';

@@ -33,24 +33,12 @@ export const getRoomEditor = createQuery({
       select: {
         id: true,
         category: { select: { name: true } },
-        _count: { select: { projects: { where: { hackathonId } } } },
-        rooms: {
-          where: { room: { hackathonId } },
-          select: {
-            tableRanges: {
-              orderBy: { toNumber: 'desc' },
-              take: 1,
-              select: { toNumber: true },
-            },
-          },
-        },
       },
     });
     const options = await Promise.all(
       tracks.map(async (track) => ({
         id: track.id,
         name: track.category.name,
-        projectCount: track._count.projects,
         remainingProjects: await db.project.count({
           where: {
             hackathonId,
@@ -61,12 +49,6 @@ export const getRoomEditor = createQuery({
             ],
           },
         }),
-        highestTableNumber: Math.max(
-          0,
-          ...track.rooms.flatMap((link) =>
-            link.tableRanges.map((range) => range.toNumber),
-          ),
-        ),
       })),
     );
     return { room, tracks: options, locked: hackathon.status !== 'DRAFT' };

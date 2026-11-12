@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
 import type { AppContext } from '../../context';
 test(
-  'room creation/editing saves ranges atomically, reclaims current placements and rejects stale capacity without partial writes',
+  'room creation/editing saves capacities atomically, reclaims current placements and rejects stale capacity without partial writes',
   { skip: process.env.CRITIQ_DB_INTEGRATION !== '1' },
   async () => {
     const { db } = await import('@critiq/db');
@@ -48,18 +48,14 @@ test(
       await assert.rejects(
         createRoom(ctx, {
           name: rejectedName,
-          tracks: [
-            { trackId: track.id, ranges: [{ fromNumber: 25, toNumber: 27 }] },
-          ],
+          tracks: [{ trackId: track.id, capacity: 3 }],
         }),
         { code: 'VALIDATION_ERROR' },
       );
       assert.equal(await db.room.count({ where: { name: rejectedName } }), 0);
       const room = await createRoom(ctx, {
         name: randomUUID(),
-        tracks: [
-          { trackId: track.id, ranges: [{ fromNumber: 25, toNumber: 26 }] },
-        ],
+        tracks: [{ trackId: track.id, capacity: 2 }],
       });
       roomId = room.id;
       assert.deepEqual(
@@ -69,7 +65,7 @@ test(
             orderBy: { registrationOrder: 'asc' },
           })
         ).map((p) => p.tableNumber),
-        [25, 26],
+        [1, 2],
       );
       assert.equal(
         (await getRoomEditor(ctx, {})).tracks.find((t) => t.id === track.id)!
@@ -87,18 +83,14 @@ test(
         roomId,
         name,
         isActive: true,
-        tracks: [
-          { trackId: track.id, ranges: [{ fromNumber: 100, toNumber: 101 }] },
-        ],
+        tracks: [{ trackId: track.id, capacity: 2 }],
       });
       await assert.rejects(
         updateRoom(ctx, {
           roomId,
           name: 'Rejected rename',
           isActive: true,
-          tracks: [
-            { trackId: track.id, ranges: [{ fromNumber: 100, toNumber: 102 }] },
-          ],
+          tracks: [{ trackId: track.id, capacity: 3 }],
         }),
         { code: 'VALIDATION_ERROR' },
       );
@@ -113,7 +105,7 @@ test(
             orderBy: { registrationOrder: 'asc' },
           })
         ).map((p) => p.tableNumber),
-        [100, 101],
+        [1, 2],
       );
       await assert.rejects(
         getRoomEditor(
@@ -128,6 +120,73 @@ test(
     } finally {
       await db.project.deleteMany({ where: { id: { in: ids } } });
       if (roomId) await db.room.delete({ where: { id: roomId } });
+      await db.judgingCategory.delete({ where: { id: category.id } });
+      await db.$disconnect();
+    }
+  },
+);
+
+test(
+  'concurrent room creation cannot reserve the same remaining project twice',
+  { skip: process.env.CRITIQ_DB_INTEGRATION !== '1' },
+  async () => {
+    const { db } = await import('@critiq/db');
+    const { createRoom } = await import('./create-room');
+    const { createCategory } =
+      await import('../../categories/mutations/create-category');
+    const { createProject } =
+      await import('../../projects/mutations/create-project');
+    const hackathon = await db.hackathon.findFirstOrThrow();
+    const owner = await db.user.findFirstOrThrow({ where: { role: 'OWNER' } });
+    const ctx: AppContext = {
+      db,
+      hackathonId: hackathon.id,
+      actor: { type: 'user', userId: owner.id, role: owner.role },
+      source: 'web-action',
+      request: { ipAddress: null, userAgent: null },
+    };
+    const category = await createCategory(ctx, {
+      kind: 'TRACK',
+      name: randomUUID(),
+      method: 'RELATIVE',
+    });
+    const track = await db.track.findUniqueOrThrow({
+      where: { categoryId: category.id },
+    });
+    const roomIds: string[] = [];
+    try {
+      const project = await createProject(ctx, {
+        name: randomUUID(),
+        trackId: track.id,
+      });
+      const results = await Promise.allSettled(
+        [1, 2].map(() =>
+          createRoom(ctx, {
+            name: randomUUID(),
+            tracks: [{ trackId: track.id, capacity: 1 }],
+          }),
+        ),
+      );
+      for (const result of results)
+        if (result.status === 'fulfilled') roomIds.push(result.value.id);
+      assert.equal(roomIds.length, 1);
+      const rejected = results.find((result) => result.status === 'rejected');
+      assert.ok(
+        rejected?.status === 'rejected' &&
+          rejected.reason.code === 'VALIDATION_ERROR',
+      );
+      assert.equal(
+        await db.trackRoom.count({ where: { trackId: track.id } }),
+        1,
+      );
+      assert.equal(
+        (await db.project.findUniqueOrThrow({ where: { id: project.id } }))
+          .roomId,
+        roomIds[0],
+      );
+    } finally {
+      await db.project.deleteMany({ where: { trackId: track.id } });
+      await db.room.deleteMany({ where: { id: { in: roomIds } } });
       await db.judgingCategory.delete({ where: { id: category.id } });
       await db.$disconnect();
     }

@@ -11,6 +11,7 @@ async function fixture() {
   const { importProjects } = await import('./import-projects');
   const { createRoom } = await import('../../rooms/mutations/create-room');
   const { updateRoom } = await import('../../rooms/mutations/update-room');
+  const { deleteRoom } = await import('../../rooms/mutations/delete-room');
   const { setRoomTrackAccess } =
     await import('../../rooms/mutations/set-room-track-access');
   const { createCategory } =
@@ -37,6 +38,7 @@ async function fixture() {
     importProjects,
     createRoom,
     updateRoom,
+    deleteRoom,
     setRoomTrackAccess,
     createCategory,
   };
@@ -62,7 +64,7 @@ async function rollbackCheck(
 }
 
 test(
-  'projects fill sparse ranges in registration order and reflow on deletion, track moves and room status',
+  'projects fill room capacities in registration order and reflow on deletion, track moves and room status',
   integration,
   async () =>
     rollbackCheck(async (f) => {
@@ -92,23 +94,18 @@ test(
         tracks: [
           {
             trackId: f.overall.id,
-            ranges: [
-              { fromNumber: 9, toNumber: 9 },
-              { fromNumber: 1, toNumber: 2 },
-            ],
+            capacity: 3,
           },
         ],
       };
       await f.setRoomTrackAccess(ctx, access);
       const read = (id: string) =>
         tx.project.findUniqueOrThrow({ where: { id } });
-      assert.equal((await read(third.id)).tableNumber, 9);
+      assert.equal((await read(third.id)).tableNumber, 3);
       assert.equal((await read(fourth.id)).roomId, null);
       await f.setRoomTrackAccess(ctx, {
         roomId: b.id,
-        tracks: [
-          { trackId: f.overall.id, ranges: [{ fromNumber: 11, toNumber: 11 }] },
-        ],
+        tracks: [{ trackId: f.overall.id, capacity: 1 }],
       });
       await tx.trackRoom.updateMany({
         where: { roomId: b.id },
@@ -117,7 +114,7 @@ test(
       await f.setRoomTrackAccess(ctx, access);
       assert.equal((await read(first.id)).tableNumber, 1);
       assert.equal((await read(second.id)).tableNumber, 2);
-      assert.equal((await read(fourth.id)).tableNumber, 11);
+      assert.equal((await read(fourth.id)).tableNumber, 4);
       const audits = await tx.auditLog.count({
         where: { action: 'projects.place' },
       });
@@ -135,7 +132,7 @@ test(
       await f.deleteProject(ctx, { projectId: first.id });
       assert.equal((await read(second.id)).tableNumber, 1);
       assert.equal((await read(third.id)).tableNumber, 2);
-      assert.equal((await read(fourth.id)).tableNumber, 9);
+      assert.equal((await read(fourth.id)).tableNumber, 3);
       const category = await f.createCategory(ctx, {
         kind: 'TRACK',
         name: randomUUID(),
@@ -152,23 +149,21 @@ test(
       await f.setRoomTrackAccess(ctx, {
         roomId: a.id,
         tracks: [
-          { trackId: f.overall.id, ranges: [{ fromNumber: 2, toNumber: 3 }] },
-          { trackId: other.id, ranges: [{ fromNumber: 1, toNumber: 1 }] },
+          { trackId: f.overall.id, capacity: 2 },
+          { trackId: other.id, capacity: 1 },
         ],
       });
       assert.equal((await read(second.id)).tableNumber, 1);
       assert.equal((await read(third.id)).tableNumber, 2);
       await f.updateRoom(ctx, { roomId: a.id, name: a.name, isActive: false });
       assert.equal((await read(second.id)).roomId, null);
-      assert.equal((await read(third.id)).tableNumber, 11);
+      assert.equal((await read(third.id)).tableNumber, 1);
       assert.equal((await read(fourth.id)).roomId, null);
       await f.setRoomTrackAccess(ctx, {
         roomId: b.id,
-        tracks: [
-          { trackId: f.overall.id, ranges: [{ fromNumber: 11, toNumber: 12 }] },
-        ],
+        tracks: [{ trackId: f.overall.id, capacity: 2 }],
       });
-      assert.equal((await read(fourth.id)).tableNumber, 12);
+      assert.equal((await read(fourth.id)).tableNumber, 2);
       await f.updateRoom(ctx, { roomId: a.id, name: a.name, isActive: true });
       assert.equal((await read(second.id)).tableNumber, 1);
       assert.equal((await read(third.id)).tableNumber, 2);
@@ -177,14 +172,14 @@ test(
         select: { roomId: true, tableNumber: true },
       });
       assert.equal(
-        new Set(occupied.map((p) => `${p.roomId}:${p.tableNumber}`)).size,
+        new Set(occupied.map((p) => p.tableNumber)).size,
         occupied.length,
       );
     }),
 );
 
 test(
-  'bulk imports retain CSV order and adding ranges places the waiting projects',
+  'bulk imports retain CSV order and adding spots places the waiting projects',
   integration,
   async () =>
     rollbackCheck(async (f) => {
@@ -198,9 +193,7 @@ test(
       const room = await f.createRoom(ctx, { name: randomUUID() });
       await f.setRoomTrackAccess(ctx, {
         roomId: room.id,
-        tracks: [
-          { trackId: f.overall.id, ranges: [{ fromNumber: 1, toNumber: 3 }] },
-        ],
+        tracks: [{ trackId: f.overall.id, capacity: 3 }],
       });
       const projects = await ctx.db.project.findMany({
         where: { id: { in: imported.ids } },
@@ -221,9 +214,7 @@ test(
       assert.equal(overflow.tableNumber, null);
       await f.setRoomTrackAccess(ctx, {
         roomId: room.id,
-        tracks: [
-          { trackId: f.overall.id, ranges: [{ fromNumber: 1, toNumber: 4 }] },
-        ],
+        tracks: [{ trackId: f.overall.id, capacity: 4 }],
       });
       assert.equal(
         (await ctx.db.project.findUniqueOrThrow({ where: { id: overflow.id } }))
@@ -234,7 +225,7 @@ test(
 );
 
 test(
-  'placement audits roll back range/status changes, and concurrent creates cannot share a table',
+  'placement audits roll back capacity/status changes, and concurrent creates cannot share a table',
   integration,
   async () => {
     const f = await fixture(),
@@ -278,9 +269,7 @@ test(
       ids.push(first.id);
       const access = {
         roomId: room.id,
-        tracks: [
-          { trackId: track.id, ranges: [{ fromNumber: 1, toNumber: 1 }] },
-        ],
+        tracks: [{ trackId: track.id, capacity: 1 }],
       };
       await assert.rejects(f.setRoomTrackAccess(faultyCtx, access), {
         code: 'INTERNAL_SERVER_ERROR',
@@ -325,4 +314,166 @@ test(
       await db.$disconnect();
     }
   },
+);
+
+test(
+  '101 projects share global numbers across tracks and rooms; judging activity blocks renumbering atomically',
+  integration,
+  async () =>
+    rollbackCheck(async (f) => {
+      const { ctx } = f;
+      const category = await f.createCategory(ctx, {
+        kind: 'TRACK',
+        name: randomUUID(),
+        method: 'RELATIVE',
+      });
+      const track = await ctx.db.track.findUniqueOrThrow({
+        where: { categoryId: category.id },
+      });
+      await ctx.db.project.createMany({
+        data: Array.from({ length: 101 }, (_, index) => ({
+          hackathonId: ctx.hackathonId!,
+          trackId: index % 2 ? track.id : f.overall.id,
+          name: `Project ${index + 1}`,
+        })),
+      });
+      const first = await f.createRoom(ctx, {
+        name: randomUUID(),
+        tracks: [
+          { trackId: f.overall.id, capacity: 25 },
+          { trackId: track.id, capacity: 30 },
+        ],
+      });
+      await f.createRoom(ctx, {
+        name: randomUUID(),
+        tracks: [
+          { trackId: f.overall.id, capacity: 26 },
+          { trackId: track.id, capacity: 20 },
+        ],
+      });
+      const read = () =>
+        ctx.db.project.findMany({
+          where: { hackathonId: ctx.hackathonId! },
+          orderBy: { registrationOrder: 'asc' },
+        });
+      const before = await read();
+      assert.deepEqual(
+        before.map((project) => project.tableNumber).sort((a, b) => a! - b!),
+        Array.from({ length: 101 }, (_, index) => index + 1),
+      );
+      const firstNumbers = before
+        .filter((project) => project.roomId === first.id)
+        .map((project) => project.tableNumber)
+        .sort((a, b) => a! - b!);
+      assert.deepEqual(
+        firstNumbers,
+        Array.from({ length: 55 }, (_, index) => index + 1),
+      );
+      assert.equal(new Set(before.map((project) => project.roomId)).size, 2);
+      const project = before[100]!;
+      const judge = await ctx.db.user.create({
+        data: {
+          id: randomUUID(),
+          name: 'Judge',
+          email: `${randomUUID()}@example.test`,
+        },
+      });
+      await ctx.db.judgingAssignment.create({
+        data: {
+          categoryId: f.overall.categoryId,
+          projectId: project.id,
+          judgeId: judge.id,
+        },
+      });
+      const auditCount = await ctx.db.auditLog.count();
+      // A savepoint permits asserting rollback inside the surrounding test transaction.
+      await ctx.db.$executeRawUnsafe('SAVEPOINT protected_placement');
+      await assert.rejects(
+        f.updateRoom(ctx, {
+          roomId: first.id,
+          name: 'Must roll back',
+          isActive: true,
+          tracks: [
+            { trackId: f.overall.id, capacity: 24 },
+            { trackId: track.id, capacity: 30 },
+          ],
+        }),
+        { code: 'INVALID_STATE' },
+      );
+      await ctx.db.$executeRawUnsafe(
+        'ROLLBACK TO SAVEPOINT protected_placement',
+      );
+      assert.deepEqual(await read(), before);
+      assert.equal(
+        (await ctx.db.room.findUniqueOrThrow({ where: { id: first.id } })).name,
+        first.name,
+      );
+      assert.equal(await ctx.db.auditLog.count(), auditCount);
+    }),
+);
+
+test(
+  'deleting a mixed-track room leaves consecutive number blocks in every remaining room',
+  integration,
+  async () =>
+    rollbackCheck(async (f) => {
+      const { ctx } = f;
+      const category = await f.createCategory(ctx, {
+        kind: 'TRACK',
+        name: randomUUID(),
+        method: 'RELATIVE',
+      });
+      const track = await ctx.db.track.findUniqueOrThrow({
+        where: { categoryId: category.id },
+      });
+      for (let index = 0; index < 8; index++)
+        await f.createProject(ctx, {
+          name: randomUUID(),
+          trackId: index % 2 ? track.id : f.overall.id,
+        });
+      const first = await f.createRoom(ctx, {
+        name: randomUUID(),
+        tracks: [
+          { trackId: f.overall.id, capacity: 1 },
+          { trackId: track.id, capacity: 2 },
+        ],
+      });
+      const removed = await f.createRoom(ctx, {
+        name: randomUUID(),
+        tracks: [
+          { trackId: f.overall.id, capacity: 1 },
+          { trackId: track.id, capacity: 1 },
+        ],
+      });
+      const last = await f.createRoom(ctx, {
+        name: randomUUID(),
+        tracks: [
+          { trackId: f.overall.id, capacity: 2 },
+          { trackId: track.id, capacity: 1 },
+        ],
+      });
+      await f.deleteRoom(ctx, { roomId: removed.id });
+      const projects = await ctx.db.project.findMany({
+        where: { hackathonId: ctx.hackathonId! },
+        orderBy: { tableNumber: { sort: 'asc', nulls: 'last' } },
+      });
+      assert.deepEqual(
+        projects
+          .filter((project) => project.roomId === first.id)
+          .map((project) => project.tableNumber),
+        [1, 2, 3],
+      );
+      assert.deepEqual(
+        projects
+          .filter((project) => project.roomId === last.id)
+          .map((project) => project.tableNumber),
+        [4, 5, 6],
+      );
+      assert.equal(
+        projects.filter(
+          (project) => project.roomId === null && project.tableNumber === null,
+        ).length,
+        2,
+      );
+    }),
 );
