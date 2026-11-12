@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils';
 import { RoomFormDialog } from './room-form-dialog';
 import { RoomExpandedPanel } from './room-expanded-panel';
 import { getTrackColor } from '../lib/get-track-color';
+import { ExportRoomsButton } from './export-rooms-button';
 
 export function RoomsSection({ data }: { data: RoomsPageData }) {
   const router = useRouter(),
@@ -83,7 +84,7 @@ export function RoomsSection({ data }: { data: RoomsPageData }) {
         aria-label="Rooms overview"
         aria-busy={pending}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <SearchForm
             id="rooms-search"
             label="Search rooms"
@@ -93,14 +94,17 @@ export function RoomsSection({ data }: { data: RoomsPageData }) {
             onSearch={(search) => navigate({ search, page: '1' }, true)}
             className="flex-1 sm:max-w-sm"
           />
-          <Button
-            className="ml-auto shrink-0"
-            disabled={data.locked || pending}
-            onClick={() => setEditor({})}
-          >
-            <RiAddLine data-icon="inline-start" />
-            Add room
-          </Button>
+          <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+            <ExportRoomsButton search={data.search} disabled={pending} />
+            <Button
+              className="shrink-0"
+              disabled={data.locked || pending}
+              onClick={() => setEditor({})}
+            >
+              <RiAddLine data-icon="inline-start" />
+              Add room
+            </Button>
+          </div>
         </div>
         {!data.items.length ? (
           <EmptyState

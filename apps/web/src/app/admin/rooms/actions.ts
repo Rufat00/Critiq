@@ -6,6 +6,7 @@ import {
   deleteRoom,
   getRoom,
   getRoomEditor,
+  exportRoomProjects,
   type CreateRoomInput,
   type UpdateRoomInput,
   type DeleteRoomInput,
@@ -16,6 +17,10 @@ const updateSafely = createSafeAction(updateRoom);
 const deleteSafely = createSafeAction(deleteRoom);
 const editorSafely = createSafeAction(getRoomEditor);
 const getSafely = createSafeAction(getRoom);
+const exportSafely = createSafeAction(exportRoomProjects);
+export async function exportRoomProjectsAction(input: { search?: string }) {
+  return exportSafely(input);
+}
 export async function getRoomAction(input: { roomId: string }) {
   return getSafely(input);
 }

@@ -3,6 +3,7 @@ import { createQuery } from '../../shared/operations';
 import { AppError, AppErrorCode } from '../../shared/errors';
 import { paginationMetadata } from '../../shared/pagination/pagination';
 import { listRoomsSchema } from '../schemas/list-rooms-schema';
+import { roomSearchWhere } from '../lib/room-search-where';
 export const listRooms = createQuery({
   name: 'rooms.list',
   schema: listRoomsSchema,
@@ -10,12 +11,7 @@ export const listRooms = createQuery({
 })(async ({ ctx, input }) => {
   const hackathonId = requireHackathonId(ctx);
   const read = async (db: typeof ctx.db) => {
-    const where = {
-      hackathonId,
-      ...(input.search
-        ? { name: { contains: input.search, mode: 'insensitive' as const } }
-        : {}),
-    };
+    const where = roomSearchWhere(hackathonId, input.search);
     const [hackathon, items, total, rooms, placed, unassigned, tracks] =
       await Promise.all([
         db.hackathon.findUnique({

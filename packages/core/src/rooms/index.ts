@@ -1,4 +1,5 @@
 export { listRooms, type RoomsOverview } from './queries/list-rooms';
+export { exportRoomProjects } from './queries/export-room-projects';
 export { getRoom, type RoomDetail } from './queries/get-room';
 export { createRoom } from './mutations/create-room';
 export { updateRoom } from './mutations/update-room';

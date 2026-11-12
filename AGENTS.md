@@ -220,6 +220,10 @@ with clear retry actions. Never leave a blank screen, broken layout, or raw erro
 
 - Inline field errors for validation.
 - Toasts for quick non-blocking success/failure feedback.
+- Import `toast` and `Toaster` from `@/components/ui/sonner`, the project's
+  shared implementation. Never import them directly from `sonner` outside
+  `apps/web/src/components/ui/sonner.tsx`. Use only the methods exposed by
+  the shared implementation.
 - Callouts for important page warnings or errors.
 - Small nearby feedback for copy actions.
 - Confirm dialogs for destructive or serious actions, such as publishing results.
