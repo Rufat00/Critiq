@@ -5,14 +5,14 @@ import { useRouter } from 'next/navigation';
 import type { ProjectImportPreview } from '@critiq/core/projects';
 import { RiUploadCloud2Line, RiDownloadLine } from '@remixicon/react';
 import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogBody,
-  DialogFooter,
-} from '@/components/ui/dialog';
+  ResponsiveDialog,
+  ResponsiveDialogTrigger,
+  ResponsiveDialogContent,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogBody,
+  ResponsiveDialogFooter,
+} from '@/components/ui/responsive-dialog';
 import {
   Field,
   FieldGroup,
@@ -180,7 +180,7 @@ export function ProjectImportDialog({
     }
   }
   return (
-    <Dialog
+    <ResponsiveDialog
       open={open}
       onOpenChange={(next) => {
         if (next) {
@@ -189,8 +189,8 @@ export function ProjectImportDialog({
         } else close();
       }}
     >
-      <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent
+      <ResponsiveDialogTrigger asChild>{children}</ResponsiveDialogTrigger>
+      <ResponsiveDialogContent
         className="max-w-4xl"
         aria-describedby={undefined}
         showCloseButton={!pending}
@@ -201,16 +201,16 @@ export function ProjectImportDialog({
             void form.handleSubmit();
           }}
         >
-          <DialogHeader>
-            <DialogTitle>
+          <ResponsiveDialogHeader>
+            <ResponsiveDialogTitle>
               {preview
                 ? 'Review project import'
                 : devpost
                   ? 'Import from Devpost'
                   : 'Import CSV'}
-            </DialogTitle>
-          </DialogHeader>
-          <DialogBody>
+            </ResponsiveDialogTitle>
+          </ResponsiveDialogHeader>
+          <ResponsiveDialogBody>
             <div className="flex flex-col gap-5">
               {preview ? (
                 <>
@@ -417,8 +417,8 @@ export function ProjectImportDialog({
                 </Alert>
               )}
             </div>
-          </DialogBody>
-          <DialogFooter className="sm:justify-between">
+          </ResponsiveDialogBody>
+          <ResponsiveDialogFooter className="sm:justify-between">
             <div className="flex gap-2">
               <Button
                 type="button"
@@ -452,9 +452,9 @@ export function ProjectImportDialog({
                 ? `Import ${preview.projects.length} projects`
                 : 'Preview import'}
             </LoadingButton>
-          </DialogFooter>
+          </ResponsiveDialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   );
 }

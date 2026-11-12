@@ -7,14 +7,14 @@ import type { ProjectList } from '@critiq/core/projects';
 import { RiArrowLeftLine, RiArrowRightLine } from '@remixicon/react';
 import { Button, LoadingButton } from '@/components/ui/button';
 import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogBody,
-  DialogFooter,
-} from '@/components/ui/dialog';
+  ResponsiveDialog,
+  ResponsiveDialogTrigger,
+  ResponsiveDialogContent,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogBody,
+  ResponsiveDialogFooter,
+} from '@/components/ui/responsive-dialog';
 import {
   Field,
   FieldGroup,
@@ -146,7 +146,7 @@ export function ProjectFormDialog({
     return () => cancelAnimationFrame(frame);
   }, [open, screen, id]);
   return (
-    <Dialog
+    <ResponsiveDialog
       open={open}
       onOpenChange={(next) => {
         if (next) {
@@ -158,8 +158,8 @@ export function ProjectFormDialog({
         } else close();
       }}
     >
-      <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent
+      <ResponsiveDialogTrigger asChild>{children}</ResponsiveDialogTrigger>
+      <ResponsiveDialogContent
         className={cn(
           'max-w-2xl',
           editing &&
@@ -176,15 +176,17 @@ export function ProjectFormDialog({
           }}
         >
           {editing ? (
-            <DialogTitle className="sr-only">Edit project</DialogTitle>
+            <ResponsiveDialogTitle className="sr-only">
+              Edit project
+            </ResponsiveDialogTitle>
           ) : (
-            <DialogHeader>
-              <DialogTitle>
+            <ResponsiveDialogHeader>
+              <ResponsiveDialogTitle>
                 {moving ? `Move ${project?.name}` : 'Add project'}
-              </DialogTitle>
-            </DialogHeader>
+              </ResponsiveDialogTitle>
+            </ResponsiveDialogHeader>
           )}
-          <DialogBody
+          <ResponsiveDialogBody
             className={cn(
               editing &&
                 'flex min-h-0 flex-1 flex-col overflow-hidden pt-14 sm:px-10 sm:pt-14',
@@ -410,8 +412,8 @@ export function ProjectFormDialog({
                 </Alert>
               )}
             </Tabs>
-          </DialogBody>
-          <DialogFooter
+          </ResponsiveDialogBody>
+          <ResponsiveDialogFooter
             className={cn(
               'shrink-0 sm:justify-between',
               editing && 'sm:px-10 sm:py-4',
@@ -461,9 +463,9 @@ export function ProjectFormDialog({
                 'Add project'
               )}
             </LoadingButton>
-          </DialogFooter>
+          </ResponsiveDialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   );
 }

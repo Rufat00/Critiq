@@ -14,13 +14,13 @@ import { judgingMethodLabels, rubricWeightOptions } from '@critiq/constants';
 import { Button, LoadingButton } from '@/components/ui/button';
 import { ActionTile } from '@/components/action-tile';
 import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogTitle,
-  DialogBody,
-  DialogFooter,
-} from '@/components/ui/dialog';
+  ResponsiveDialog,
+  ResponsiveDialogTrigger,
+  ResponsiveDialogContent,
+  ResponsiveDialogTitle,
+  ResponsiveDialogBody,
+  ResponsiveDialogFooter,
+} from '@/components/ui/responsive-dialog';
 import {
   Field,
   FieldGroup,
@@ -266,7 +266,7 @@ export function CategoryFormDialog({
           ? 'Which tracks can enter this challenge?'
           : 'Which challenges belong in this track?';
   return (
-    <Dialog
+    <ResponsiveDialog
       open={open}
       onOpenChange={(value) => {
         if (!value) requestClose();
@@ -279,13 +279,13 @@ export function CategoryFormDialog({
       }}
     >
       {!editing && (
-        <DialogTrigger asChild>
+        <ResponsiveDialogTrigger asChild>
           <ActionTile icon={<RiAddLine />} disabled={locked}>
             Create {kind}
           </ActionTile>
-        </DialogTrigger>
+        </ResponsiveDialogTrigger>
       )}
-      <DialogContent
+      <ResponsiveDialogContent
         className="flex h-[min(38rem,calc(100dvh-2rem))] flex-col overflow-hidden sm:max-w-5xl"
         aria-describedby={undefined}
         showCloseButton={!pending}
@@ -310,7 +310,7 @@ export function CategoryFormDialog({
             advance();
           }}
         >
-          <DialogBody
+          <ResponsiveDialogBody
             className={cn(
               'flex min-h-0 flex-1 flex-col pt-14 sm:px-10 sm:pt-14',
               editing ? 'overflow-hidden' : 'overflow-y-auto',
@@ -323,13 +323,13 @@ export function CategoryFormDialog({
                 !editing && screen === 'details' && 'mx-auto max-w-2xl',
               )}
             >
-              <DialogTitle
+              <ResponsiveDialogTitle
                 ref={heading}
                 tabIndex={-1}
                 className={cn('outline-none', editing && 'sr-only')}
               >
                 {editing ? `Edit ${kind}` : title}
-              </DialogTitle>
+              </ResponsiveDialogTitle>
               <FormTabs
                 editing={editing}
                 screen={screen}
@@ -765,8 +765,8 @@ export function CategoryFormDialog({
                 </Alert>
               )}
             </div>
-          </DialogBody>
-          <DialogFooter className="shrink-0 sm:justify-between sm:px-10 sm:py-4">
+          </ResponsiveDialogBody>
+          <ResponsiveDialogFooter className="shrink-0 sm:justify-between sm:px-10 sm:py-4">
             <div className="flex gap-2">
               {!editing && screen !== 'details' && (
                 <Button
@@ -813,10 +813,10 @@ export function CategoryFormDialog({
                 <RiArrowRightLine data-icon="inline-end" />
               </Button>
             )}
-          </DialogFooter>
+          </ResponsiveDialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   );
 }
 

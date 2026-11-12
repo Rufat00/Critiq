@@ -16,12 +16,12 @@ import {
   updateRoomAction,
 } from '../actions';
 import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogBody,
-  DialogFooter,
-} from '@/components/ui/dialog';
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogTitle,
+  ResponsiveDialogBody,
+  ResponsiveDialogFooter,
+} from '@/components/ui/responsive-dialog';
 import {
   Field,
   FieldGroup,
@@ -83,13 +83,13 @@ export function RoomFormDialog({
       });
   }
   return (
-    <Dialog
+    <ResponsiveDialog
       open
       onOpenChange={(open) => {
         if (!open) close();
       }}
     >
-      <DialogContent
+      <ResponsiveDialogContent
         className="flex h-[min(38rem,calc(100dvh-2rem))] flex-col overflow-hidden sm:max-w-2xl"
         aria-describedby={undefined}
         showCloseButton={!pending}
@@ -109,8 +109,10 @@ export function RoomFormDialog({
             onPendingChange={setPending}
           />
         ) : (
-          <DialogBody className="flex flex-col gap-6 pt-14 sm:px-10">
-            <DialogTitle>{roomId ? 'Edit room' : 'Add room'}</DialogTitle>
+          <ResponsiveDialogBody className="flex flex-col gap-6 pt-14 sm:px-10">
+            <ResponsiveDialogTitle>
+              {roomId ? 'Edit room' : 'Add room'}
+            </ResponsiveDialogTitle>
             {error ? (
               <Alert variant="destructive">
                 <AlertDescription>
@@ -133,10 +135,10 @@ export function RoomFormDialog({
                 <Skeleton className="h-28 w-full" />
               </div>
             )}
-          </DialogBody>
+          </ResponsiveDialogBody>
         )}
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   );
 }
 function RoomConfigurationForm({
@@ -232,13 +234,13 @@ function RoomConfigurationForm({
         else void form.handleSubmit();
       }}
     >
-      <DialogBody
+      <ResponsiveDialogBody
         className={cn(
           'flex min-h-0 flex-1 flex-col gap-6 pt-14 sm:px-10 sm:pt-14',
           editing ? 'overflow-hidden' : 'overflow-y-auto overscroll-contain',
         )}
       >
-        <DialogTitle
+        <ResponsiveDialogTitle
           ref={heading}
           tabIndex={-1}
           className={cn('outline-none', editing && 'sr-only')}
@@ -248,7 +250,7 @@ function RoomConfigurationForm({
             : step === 'details'
               ? 'Add room: details'
               : 'Add room: track spots'}
-        </DialogTitle>
+        </ResponsiveDialogTitle>
         <RoomFormTabs
           editing={editing}
           step={step}
@@ -378,8 +380,8 @@ function RoomConfigurationForm({
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-      </DialogBody>
-      <DialogFooter className="shrink-0 sm:justify-between sm:px-10 sm:py-4">
+      </ResponsiveDialogBody>
+      <ResponsiveDialogFooter className="shrink-0 sm:justify-between sm:px-10 sm:py-4">
         <div className="flex gap-2">
           {!editing && step === 'spots' && (
             <Button
@@ -418,7 +420,7 @@ function RoomConfigurationForm({
             {editing ? 'Save changes' : 'Create room'}
           </LoadingButton>
         )}
-      </DialogFooter>
+      </ResponsiveDialogFooter>
     </form>
   );
 }

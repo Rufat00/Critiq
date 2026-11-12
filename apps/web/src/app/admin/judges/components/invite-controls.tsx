@@ -14,14 +14,14 @@ import {
 } from '@/components/ui/field';
 import { Button, LoadingButton } from '@/components/ui/button';
 import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogBody,
-  DialogFooter,
-} from '@/components/ui/dialog';
+  ResponsiveDialog,
+  ResponsiveDialogTrigger,
+  ResponsiveDialogContent,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogBody,
+  ResponsiveDialogFooter,
+} from '@/components/ui/responsive-dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from '@/components/ui/sonner';
 import { useUnsavedGuard } from '@/components/ui/unsaved-guard';
@@ -146,7 +146,7 @@ export function InviteControls({
   return (
     <div className="flex flex-col gap-3">
       <div className="grid w-full max-w-xl gap-3 sm:grid-cols-2">
-        <Dialog
+        <ResponsiveDialog
           open={emailOpen}
           onOpenChange={(open) => {
             if (open) {
@@ -162,7 +162,7 @@ export function InviteControls({
             });
           }}
         >
-          <DialogTrigger asChild>
+          <ResponsiveDialogTrigger asChild>
             <ActionTile
               icon={<RiMailSendLine />}
               disabled={!emailEnabled || disabled || pending || submitting}
@@ -172,20 +172,20 @@ export function InviteControls({
             >
               Invite by email
             </ActionTile>
-          </DialogTrigger>
-          <DialogContent aria-describedby={undefined}>
+          </ResponsiveDialogTrigger>
+          <ResponsiveDialogContent aria-describedby={undefined}>
             <form
               onSubmit={(event) => {
                 event.preventDefault();
                 void form.handleSubmit();
               }}
             >
-              <DialogHeader>
-                <DialogTitle>
+              <ResponsiveDialogHeader>
+                <ResponsiveDialogTitle>
                   Invite a judge by email to {trackName}
-                </DialogTitle>
-              </DialogHeader>
-              <DialogBody>
+                </ResponsiveDialogTitle>
+              </ResponsiveDialogHeader>
+              <ResponsiveDialogBody>
                 <FieldGroup>
                   <form.Field
                     name="email"
@@ -241,8 +241,8 @@ export function InviteControls({
                     </Alert>
                   )}
                 </FieldGroup>
-              </DialogBody>
-              <DialogFooter>
+              </ResponsiveDialogBody>
+              <ResponsiveDialogFooter>
                 <Button
                   type="button"
                   variant="secondary"
@@ -266,10 +266,10 @@ export function InviteControls({
                   <RiMailSendLine data-icon="inline-start" />
                   Send invite
                 </LoadingButton>
-              </DialogFooter>
+              </ResponsiveDialogFooter>
             </form>
-          </DialogContent>
-        </Dialog>
+          </ResponsiveDialogContent>
+        </ResponsiveDialog>
         <ActionTile
           icon={pending && !invitation ? <Spinner /> : <RiQrCodeLine />}
           disabled={disabled || submitting || pending}
@@ -291,7 +291,7 @@ export function InviteControls({
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      <Dialog
+      <ResponsiveDialog
         open={invitation !== null}
         onOpenChange={(open) => {
           if (!open && !pending) {
@@ -300,11 +300,16 @@ export function InviteControls({
           }
         }}
       >
-        <DialogContent aria-describedby={undefined}>
-          <DialogHeader>
-            <DialogTitle>Invite a judge to {trackName}</DialogTitle>
-          </DialogHeader>
-          <DialogBody>
+        <ResponsiveDialogContent
+          mobilePresentation="dialog"
+          aria-describedby={undefined}
+        >
+          <ResponsiveDialogHeader>
+            <ResponsiveDialogTitle>
+              Invite a judge to {trackName}
+            </ResponsiveDialogTitle>
+          </ResponsiveDialogHeader>
+          <ResponsiveDialogBody>
             <div className="flex flex-col gap-4">
               {expired && (
                 <Alert>
@@ -355,8 +360,8 @@ export function InviteControls({
                 {copied ? 'Invitation link copied.' : ''}
               </span>
             </div>
-          </DialogBody>
-          <DialogFooter>
+          </ResponsiveDialogBody>
+          <ResponsiveDialogFooter>
             <Button
               variant="secondary"
               disabled={pending}
@@ -371,9 +376,9 @@ export function InviteControls({
             >
               Revoke invitation
             </LoadingButton>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </ResponsiveDialogFooter>
+        </ResponsiveDialogContent>
+      </ResponsiveDialog>
     </div>
   );
 }

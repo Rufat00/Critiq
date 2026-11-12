@@ -297,6 +297,24 @@
   }
 }
 
+/* Form dialogs become bottom sheets below the shared mobile breakpoint. */
+@media (width < 48rem) {
+  [data-slot='responsive-dialog-content'][data-mobile-presentation='sheet'] {
+    inset: auto 0 0;
+    width: 100%;
+    max-width: none;
+    max-height: calc(100dvh - 1rem);
+    translate: 0;
+    border-radius: var(--radius-dialog) var(--radius-dialog) 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    overscroll-behavior: contain;
+    --tw-enter-scale: 1;
+    --tw-exit-scale: 1;
+    --tw-enter-translate-y: 100%;
+    --tw-exit-translate-y: 100%;
+  }
+}
+
 /* Apply these motion tokens in component classes. No universal transitions:
  * they can interfere with dragging, sliders, chart cursors, and timers. */
 @media (prefers-reduced-motion: reduce) {
