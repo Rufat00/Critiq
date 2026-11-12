@@ -3,11 +3,7 @@ import { useId, useRef, useState, type ReactNode } from 'react';
 import { useForm, useStore } from '@tanstack/react-form';
 import { useRouter } from 'next/navigation';
 import type { ProjectImportPreview } from '@critiq/core/projects';
-import {
-  RiUploadCloud2Line,
-  RiDownloadLine,
-  RiInformationLine,
-} from '@remixicon/react';
+import { RiUploadCloud2Line, RiDownloadLine } from '@remixicon/react';
 import {
   Dialog,
   DialogTrigger,
@@ -25,7 +21,7 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Button, LoadingButton } from '@/components/ui/button';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { VideoCard } from '@/components/video-card';
 import { videos } from '@/lib/constants/videos';
 import { toast } from '@/components/ui/sonner';
@@ -216,16 +212,6 @@ export function ProjectImportDialog({
           </DialogHeader>
           <DialogBody>
             <div className="flex flex-col gap-5">
-              <Alert>
-                <RiInformationLine />
-                <AlertTitle>Only submitted projects are added</AlertTitle>
-                <AlertDescription>
-                  Submitted projects are eligible. “Submitted (Hidden)” and
-                  “Draft” projects are skipped. Existing projects are kept as
-                  they are; duplicate submission URLs, Devpost IDs, and titles
-                  without a URL are skipped.
-                </AlertDescription>
-              </Alert>
               {preview ? (
                 <>
                   <div role="status" className="flex flex-wrap gap-5 text-sm">
@@ -286,29 +272,34 @@ export function ProjectImportDialog({
                         </h3>
                         <ol className="flex list-decimal flex-col gap-2 pl-5">
                           <li>
-                            Open your hackathon’s Manage area, then Metrics.
+                            Open your hackathon’s Manage area, then select{' '}
+                            <strong>Metrics</strong>.
                           </li>
                           <li>
-                            Select Projects data and Generate report. Exclude
-                            draft submissions if offered.
+                            Under Type of report, select{' '}
+                            <strong>Projects data</strong>.
                           </li>
                           <li>
-                            Select Download report and keep the original header
-                            row.
+                            Under Personally identifiable information, select{' '}
+                            <strong>Do not include</strong>.
+                          </li>
+                          <li>
+                            Select <strong>Generate report</strong>, then
+                            download the CSV when it is ready. Keep the original
+                            header row.
                           </li>
                           <li>
                             Check that Track and Opt-In Prizes match your Critiq
                             category names.
                           </li>
                         </ol>
-                        <a
-                          className="underline underline-offset-4"
-                          href="https://help.devpost.com/article/86-metrics-export-projects-data"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          Devpost export instructions
-                        </a>
+                        <p className="text-muted-foreground">
+                          Only submitted projects are added. “Submitted
+                          (Hidden)” and “Draft” projects are skipped. Existing
+                          projects are kept as they are; duplicate submission
+                          URLs, Devpost IDs, and titles without a URL are
+                          skipped.
+                        </p>
                         <details>
                           <summary className="cursor-pointer">
                             Required Devpost headers
@@ -350,63 +341,63 @@ export function ProjectImportDialog({
                         ? 'Extra Devpost prizes without a matching Critiq challenge are ignored. Unknown tracks and ineligible existing challenges must be fixed before importing.'
                         : 'Unknown or ineligible categories must be fixed before importing.'}
                     </p>
-                    <FieldGroup>
-                      <form.Field name="csv">
-                        {() => (
-                          <Field data-invalid={Boolean(error || errors.length)}>
-                            <FieldLabel htmlFor={`${id}-file`}>
-                              Project CSV file
-                            </FieldLabel>
-                            <div
-                              onDragOver={(event) => {
-                                event.preventDefault();
-                                if (!pending) setDragging(true);
-                              }}
-                              onDragLeave={() => setDragging(false)}
-                              onDrop={(event) => {
-                                event.preventDefault();
-                                setDragging(false);
-                                void readFile(event.dataTransfer.files);
-                              }}
-                              data-dragging={dragging}
-                              className="flex flex-col items-center gap-3 rounded-2xl border border-dashed p-5 text-center data-[dragging=true]:border-primary data-[dragging=true]:bg-accent"
-                            >
-                              <RiUploadCloud2Line
-                                aria-hidden="true"
-                                className="size-7 text-muted-foreground"
-                              />
-                              <p className="text-sm">
-                                {reading
-                                  ? 'Reading file…'
-                                  : fileName || 'Drag and drop a CSV here'}
-                              </p>
-                              <Input
-                                ref={input}
-                                id={`${id}-file`}
-                                type="file"
-                                accept=".csv,text/csv"
-                                disabled={pending || locked}
-                                onChange={(event) =>
-                                  void readFile(event.target.files)
-                                }
-                                aria-invalid={Boolean(error)}
-                                aria-describedby={`${id}-limits ${id}-errors`}
-                              />
-                              <p
-                                id={`${id}-limits`}
-                                className="text-xs text-muted-foreground"
-                              >
-                                UTF-8 CSV · Up to 1 MB and 500 project rows
-                              </p>
-                            </div>
-                          </Field>
-                        )}
-                      </form.Field>
-                    </FieldGroup>
                   </div>
                   <VideoCard
                     video={devpost ? videos.devpostImport : videos.csvImport}
                   />
+                  <FieldGroup className="md:col-span-2">
+                    <form.Field name="csv">
+                      {() => (
+                        <Field data-invalid={Boolean(error || errors.length)}>
+                          <FieldLabel htmlFor={`${id}-file`}>
+                            Project CSV file
+                          </FieldLabel>
+                          <div
+                            onDragOver={(event) => {
+                              event.preventDefault();
+                              if (!pending) setDragging(true);
+                            }}
+                            onDragLeave={() => setDragging(false)}
+                            onDrop={(event) => {
+                              event.preventDefault();
+                              setDragging(false);
+                              void readFile(event.dataTransfer.files);
+                            }}
+                            data-dragging={dragging}
+                            className="flex flex-col items-center gap-3 rounded-2xl border border-dashed p-5 text-center data-[dragging=true]:border-primary data-[dragging=true]:bg-accent"
+                          >
+                            <RiUploadCloud2Line
+                              aria-hidden="true"
+                              className="size-7 text-muted-foreground"
+                            />
+                            <p className="text-sm">
+                              {reading
+                                ? 'Reading file…'
+                                : fileName || 'Drag and drop a CSV here'}
+                            </p>
+                            <Input
+                              ref={input}
+                              id={`${id}-file`}
+                              type="file"
+                              accept=".csv,text/csv"
+                              disabled={pending || locked}
+                              onChange={(event) =>
+                                void readFile(event.target.files)
+                              }
+                              aria-invalid={Boolean(error)}
+                              aria-describedby={`${id}-limits ${id}-errors`}
+                            />
+                            <p
+                              id={`${id}-limits`}
+                              className="text-xs text-muted-foreground"
+                            >
+                              UTF-8 CSV · Up to 1 MB and 500 project rows
+                            </p>
+                          </div>
+                        </Field>
+                      )}
+                    </form.Field>
+                  </FieldGroup>
                 </div>
               )}
               {(error || errors.length > 0) && (

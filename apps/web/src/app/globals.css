@@ -251,8 +251,38 @@
 }
 
 @layer base {
+  html {
+    scrollbar-gutter: stable;
+  }
+
   * {
     @apply border-border;
+    scrollbar-width: thin;
+    scrollbar-color: var(--input) transparent;
+  }
+
+  /* Fallback for browsers without the standard scrollbar properties. */
+  @supports not (scrollbar-width: thin) {
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track,
+    ::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      border: 2px solid transparent;
+      border-radius: var(--ui-radius-pill);
+      background: var(--input);
+      background-clip: padding-box;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background-color: var(--muted-foreground);
+    }
   }
 
   body {
