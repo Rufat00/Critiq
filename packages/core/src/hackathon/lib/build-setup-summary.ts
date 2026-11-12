@@ -135,7 +135,9 @@ export function buildSetupSummary({ hackathon: h, judges }: SetupSnapshot) {
       projects: projects.length,
       judges: activeJudges.length,
       categories: customCategoryCount,
-      tracks: h.categories.filter((c) => c.kind === 'TRACK').length,
+      tracks: h.categories.filter(
+        (c) => c.kind === 'OVERALL' || c.kind === 'TRACK',
+      ).length,
       challenges: h.categories.filter((c) => c.kind === 'CHALLENGE').length,
       rooms: activeRooms.length,
       invitations: h.invitations.filter(

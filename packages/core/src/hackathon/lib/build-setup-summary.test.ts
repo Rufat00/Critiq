@@ -4,13 +4,13 @@ import { buildSetupSummary } from './build-setup-summary';
 import type { SetupSnapshot } from './read-setup-snapshot';
 import { snapshot } from './setup-snapshot.fixture';
 
-test('home counts exclude Overall and readiness has only configuration warnings', () => {
+test('home track count includes Overall and readiness has only configuration warnings', () => {
   const summary = buildSetupSummary(snapshot());
   assert.deepEqual(summary.counts, {
     projects: 1,
     judges: 1,
     categories: 0,
-    tracks: 0,
+    tracks: 1,
     challenges: 0,
     rooms: 0,
     invitations: 0,
@@ -19,6 +19,27 @@ test('home counts exclude Overall and readiness has only configuration warnings'
   assert.deepEqual(summary.warnings, [
     '1 project needs a room or table location.',
   ]);
+});
+
+test('home track count includes specialized tracks and excludes challenges', () => {
+  const data = snapshot();
+  data.hackathon.categories.push(
+    {
+      ...data.hackathon.categories[0]!,
+      id: 'special',
+      kind: 'TRACK',
+      track: { ...data.hackathon.categories[0]!.track!, id: 'special-track' },
+    },
+    {
+      ...data.hackathon.categories[0]!,
+      id: 'challenge',
+      kind: 'CHALLENGE',
+      track: null,
+    },
+  );
+  const summary = buildSetupSummary(data);
+  assert.equal(summary.counts.tracks, 2);
+  assert.equal(summary.counts.challenges, 1);
 });
 
 test('configuration edits invalidate readiness confirmation', () => {
