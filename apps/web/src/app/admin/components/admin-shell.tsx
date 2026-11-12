@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/popover';
 import { getStageNavigation } from '../lib/stage-navigation';
 import { AdminFrame } from './admin-frame';
+import { AdminMobileNavigation } from './admin-mobile-navigation';
 
 const mainItems = {
   Home: { icon: RiHome5Line, href: '/admin' },
@@ -79,96 +80,106 @@ function AdminNavigation({
   ];
 
   return (
-    <header className="mx-auto grid w-full max-w-[1440px] grid-cols-[1fr_auto] items-center gap-x-6 gap-y-5 px-5 pt-6 pb-2 md:px-10 xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] xl:py-6">
-      <Link
-        href="/admin"
-        aria-label="Critiq home"
-        className="flex min-w-0 w-fit flex-col items-start gap-1.5 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
-      >
-        <Logo className="h-7 md:h-8" />
-        <span
-          className="w-full max-w-44 truncate text-sm font-medium text-muted-foreground xl:max-w-52"
-          title={summary.name ?? 'Your hackathon'}
+    <>
+      <header className="mx-auto grid w-full max-w-[1440px] grid-cols-[1fr_auto] items-center gap-x-6 gap-y-5 px-5 pt-6 pb-2 md:px-10 xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] xl:py-6">
+        <Link
+          href="/admin"
+          aria-label="Critiq home"
+          className="flex min-w-0 w-fit flex-col items-start gap-1.5 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
         >
-          {summary.name ?? 'Your hackathon'}
-        </span>
-      </Link>
-      <nav
-        aria-label="Admin navigation"
-        className="col-span-2 row-start-2 min-w-0 overflow-x-auto py-1 xl:col-span-1 xl:col-start-2 xl:row-start-1"
-      >
-        <ul className="mx-auto flex w-max items-center gap-1 rounded-full bg-muted p-1">
-          {items.map(({ label, href, icon: Icon, disabledReason }) => {
-            const active =
-              href !== null &&
-              (pathname === href ||
-                (href !== '/admin' && pathname.startsWith(`${href}/`)));
-            return (
-              <li key={label}>
-                {href ? (
-                  <Button asChild variant={active ? 'default' : 'ghost'}>
-                    <Link
-                      href={href}
-                      aria-current={active ? 'page' : undefined}
+          <Logo className="h-7 md:h-8" />
+          <span
+            className="hidden w-full max-w-44 truncate text-sm font-medium text-muted-foreground md:block xl:max-w-52"
+            title={summary.name ?? 'Your hackathon'}
+          >
+            {summary.name ?? 'Your hackathon'}
+          </span>
+        </Link>
+        <nav
+          aria-label="Admin navigation"
+          className="col-span-2 row-start-2 hidden min-w-0 overflow-x-auto py-1 md:block xl:col-span-1 xl:col-start-2 xl:row-start-1"
+        >
+          <ul className="mx-auto flex w-max items-center gap-1 rounded-full bg-muted p-1">
+            {items.map(({ label, href, icon: Icon, disabledReason }) => {
+              const active =
+                href !== null &&
+                (pathname === href ||
+                  (href !== '/admin' && pathname.startsWith(`${href}/`)));
+              return (
+                <li key={label}>
+                  {href ? (
+                    <Button asChild variant={active ? 'default' : 'ghost'}>
+                      <Link
+                        href={href}
+                        aria-current={active ? 'page' : undefined}
+                      >
+                        <Icon aria-hidden="true" data-icon="inline-start" />
+                        {label}
+                      </Link>
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      disabled
+                      title={disabledReason}
+                      aria-label={`${label}. ${disabledReason}`}
                     >
                       <Icon aria-hidden="true" data-icon="inline-start" />
                       {label}
-                    </Link>
-                  </Button>
-                ) : (
-                  <Button
-                    variant="ghost"
-                    disabled
-                    title={disabledReason}
-                    aria-label={`${label}. ${disabledReason}`}
-                  >
-                    <Icon aria-hidden="true" data-icon="inline-start" />
-                    {label}
-                  </Button>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
-      <div className="col-start-2 row-start-1 min-w-0 justify-self-end xl:col-start-3">
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="secondary"
-              size="lg"
-              aria-label={`Account for ${userName}`}
-              className="max-w-full gap-2 pr-3 pl-1"
-            >
-              <Avatar
+                    </Button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+        <div className="col-start-2 row-start-1 min-w-0 justify-self-end xl:col-start-3">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="secondary"
                 size="lg"
-                className="border border-input"
-                aria-hidden="true"
+                aria-label={`Account for ${userName}`}
+                className="max-w-full gap-2 pr-3 pl-1"
               >
-                <AvatarFallback>{initials}</AvatarFallback>
-              </Avatar>
-              <span className="hidden max-w-32 truncate sm:block xl:max-w-24 2xl:max-w-40">
-                {userName}
-              </span>
-              <RiArrowDownSLine aria-hidden="true" data-icon="inline-end" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent
-            align="end"
-            sideOffset={12}
-            className="w-44 max-w-[calc(100vw-2.5rem)] p-2"
-            aria-label="Your account"
-          >
-            <SignOutButton size="sm" />
-          </PopoverContent>
-        </Popover>
-      </div>
-      {navigation.configuration && navigation.configurationLocked && (
-        <p className="col-span-full text-center text-xs text-muted-foreground">
-          {navigation.lockReason}
-        </p>
-      )}
-    </header>
+                <Avatar
+                  size="lg"
+                  className="border border-input"
+                  aria-hidden="true"
+                >
+                  <AvatarFallback>{initials}</AvatarFallback>
+                </Avatar>
+                <span className="hidden max-w-32 truncate sm:block xl:max-w-24 2xl:max-w-40">
+                  {userName}
+                </span>
+                <RiArrowDownSLine aria-hidden="true" data-icon="inline-end" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="end"
+              sideOffset={12}
+              className="w-44 max-w-[calc(100vw-2.5rem)] p-2"
+              aria-label="Your account"
+            >
+              <SignOutButton size="sm" />
+            </PopoverContent>
+          </Popover>
+        </div>
+        {navigation.configuration && navigation.configurationLocked && (
+          <p className="col-span-full hidden text-center text-xs text-muted-foreground md:block">
+            {navigation.lockReason}
+          </p>
+        )}
+      </header>
+      <AdminMobileNavigation
+        items={items}
+        lockReason={
+          navigation.configuration && navigation.configurationLocked
+            ? navigation.lockReason
+            : undefined
+        }
+      />
+    </>
   );
 }
 

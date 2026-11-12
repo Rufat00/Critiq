@@ -23,7 +23,7 @@ export function AdminFrame({
         <main
           id="admin-content"
           tabIndex={-1}
-          className="mx-auto flex w-full max-w-[1200px] min-w-0 flex-col gap-9 px-5 pt-4 pb-16 outline-none md:px-10 md:pt-6 md:pb-20"
+          className="mx-auto flex w-full max-w-[1200px] min-w-0 flex-col gap-9 px-5 pt-4 pb-[calc(7rem+env(safe-area-inset-bottom))] outline-none md:px-10 md:pt-6 md:pb-20"
         >
           {children}
         </main>
