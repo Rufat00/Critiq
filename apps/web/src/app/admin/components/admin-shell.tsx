@@ -14,18 +14,11 @@ import {
   RiSettings3Line,
   RiLayoutGridLine,
   RiMapPinLine,
-  RiArrowDownSLine,
 } from '@remixicon/react';
 import type { HackathonSetupSummary } from '@critiq/core/hackathon';
 import { Logo } from '@/components/logo';
-import { SignOutButton } from '@/components/auth/sign-out-button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { UserMenu } from '@/components/auth/user-menu';
 import { Button } from '@/components/ui/button';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 import { getStageNavigation } from '../lib/stage-navigation';
 import { AdminFrame } from './admin-frame';
 import { AdminMobileNavigation } from './admin-mobile-navigation';
@@ -55,15 +48,6 @@ function AdminNavigation({
 }) {
   const navigation = getStageNavigation(summary.status);
   const pathname = usePathname();
-  const initials =
-    userName
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => Array.from(part)[0])
-      .join('')
-      .toUpperCase() || 'U';
   const items = [
     ...navigation.main.map((label) => ({
       label,
@@ -135,36 +119,7 @@ function AdminNavigation({
           </ul>
         </nav>
         <div className="col-start-2 row-start-1 min-w-0 justify-self-end xl:col-start-3">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="secondary"
-                size="lg"
-                aria-label={`Account for ${userName}`}
-                className="max-w-full gap-2 pr-3 pl-1"
-              >
-                <Avatar
-                  size="lg"
-                  className="border border-input"
-                  aria-hidden="true"
-                >
-                  <AvatarFallback>{initials}</AvatarFallback>
-                </Avatar>
-                <span className="hidden max-w-32 truncate sm:block xl:max-w-24 2xl:max-w-40">
-                  {userName}
-                </span>
-                <RiArrowDownSLine aria-hidden="true" data-icon="inline-end" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent
-              align="end"
-              sideOffset={12}
-              className="w-44 max-w-[calc(100vw-2.5rem)] p-2"
-              aria-label="Your account"
-            >
-              <SignOutButton size="sm" />
-            </PopoverContent>
-          </Popover>
+          <UserMenu userName={userName} />
         </div>
         {navigation.configuration &&
           navigation.configurationLocked &&

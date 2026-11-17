@@ -53,5 +53,11 @@ export const videos = {
     description:
       'Set up judge accounts and check their category access before judging starts.',
   },
+  judging: {
+    ...placeholder,
+    title: 'Judging guide',
+    description:
+      'Learn how to review projects and submit your evaluations when judging begins.',
+  },
 } as const;
 export type GuideVideo = (typeof videos)[keyof typeof videos];
