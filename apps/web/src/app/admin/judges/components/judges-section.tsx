@@ -1,4 +1,6 @@
 'use client';
+
+import { RiInformationLine } from '@remixicon/react';
 import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { RiUserLine } from '@remixicon/react';
@@ -42,7 +44,8 @@ export function JudgesSection({
   return (
     <div className="flex min-w-0 flex-col gap-6">
       {data.locked && (
-        <Alert>
+        <Alert variant="info">
+          <RiInformationLine aria-hidden="true" />
           <AlertDescription>
             Judge setup is locked because judging has started.
           </AlertDescription>

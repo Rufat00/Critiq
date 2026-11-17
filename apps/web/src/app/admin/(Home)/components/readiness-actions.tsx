@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { RiInformationLine } from '@remixicon/react';
+import { useState } from 'react';
 import { useForm, useStore } from '@tanstack/react-form';
 import { useRouter } from 'next/navigation';
 import type { HackathonSetupSummary } from '@critiq/core/hackathon';
@@ -18,10 +19,7 @@ import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/components/ui/sonner';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import {
-  markHackathonReadyAction,
-  returnHackathonToDraftAction,
-} from '../actions';
+import { markHackathonReadyAction } from '../actions';
 
 const readinessDisclaimers = [
   'This does not start judging.',
@@ -49,7 +47,6 @@ export function ReadinessActions({
 }) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string>();
-  const [pending, startTransition] = useTransition();
   const router = useRouter();
   const form = useForm({
     defaultValues: { acknowledgeWarnings: false },
@@ -77,48 +74,14 @@ export function ReadinessActions({
     form.store,
     (state) => state.values.acknowledgeWarnings,
   );
-  if (summary.status === 'READY')
-    return (
-      <div className="flex flex-col items-start gap-3">
-        <LoadingButton
-          variant="secondary"
-          loading={pending}
-          onClick={() => {
-            setError(undefined);
-            startTransition(async () => {
-              try {
-                const result = await returnHackathonToDraftAction();
-                if (!result.ok) setError(result.error.message);
-                else {
-                  toast.success('Event returned to draft.');
-                  router.refresh();
-                }
-              } catch {
-                setError('Unable to return to draft. Please try again.');
-              }
-            });
-          }}
-        >
-          Return to draft
-        </LoadingButton>
-        <p className="text-sm text-muted-foreground">
-          Return to draft to make changes. Starting judging will be available
-          with the judging workflow.
-        </p>
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-      </div>
-    );
   return (
     <>
       <section
         aria-label="Prepare for judging"
         className="flex flex-col items-start gap-4"
       >
-        <Alert variant="soft" role="note" className="gap-y-3 p-5 sm:p-6">
+        <Alert variant="info" role="note" className="gap-y-3 p-5 sm:p-6">
+          <RiInformationLine aria-hidden="true" />
           <AlertTitle>Before you mark ready</AlertTitle>
           <AlertDescription>
             <ReadinessDisclaimers />
@@ -182,7 +145,8 @@ export function ReadinessActions({
               )}
               {summary.warnings.length > 0 && (
                 <>
-                  <Alert>
+                  <Alert variant="info">
+                    <RiInformationLine aria-hidden="true" />
                     <AlertDescription>
                       <p className="font-medium">Items to acknowledge</p>
                       <ul className="mt-2 flex list-disc flex-col gap-2 pl-5">

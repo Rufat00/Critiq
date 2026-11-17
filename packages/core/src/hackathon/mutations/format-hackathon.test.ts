@@ -28,10 +28,14 @@ function fixture({ failAudit = false, status = 'JUDGING' } = {}) {
           where,
           data,
         }: {
-          where: { id: string; name: string };
+          where: { id: string; name: string; status: { not: string } };
           data: { status: string };
         }) => {
-          if (where.id !== 'event' || where.name !== s.event.name)
+          if (
+            where.id !== 'event' ||
+            where.name !== s.event.name ||
+            where.status.not === s.event.status
+          )
             return { count: 0 };
           Object.assign(s.event, data);
           return { count: 1 };
@@ -141,10 +145,9 @@ test('format requires acknowledgment and the exact current scoped event name', a
   assert.deepEqual(f.state.deletions, []);
   assert.equal(f.state.event.status, 'JUDGING');
 });
-test('format works at any stage, clears the name, restores defaults, and audits', async () => {
+test('format works outside Ready, clears the name, restores defaults, and audits', async () => {
   for (const status of [
     'DRAFT',
-    'READY',
     'JUDGING',
     'PAUSED',
     'DELIBERATION',
@@ -169,4 +172,12 @@ test('audit failure rolls back all deletion and default changes', async () => {
   const before = structuredClone(f.state);
   await rejects(formatHackathon(f.ctx, input), 'INTERNAL_SERVER_ERROR');
   assert.deepEqual(f.state, before);
+});
+
+test('Ready cannot bypass the configuration lock by formatting', async () => {
+  const f = fixture({ status: 'READY' });
+  await rejects(formatHackathon(f.ctx, input), 'CONFLICT');
+  assert.equal(f.state.event.status, 'READY');
+  assert.deepEqual(f.state.deletions, []);
+  assert.equal(f.state.audits, 0);
 });

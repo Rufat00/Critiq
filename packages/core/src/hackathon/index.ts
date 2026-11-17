@@ -1,6 +1,7 @@
 export { getHackathonHome } from './queries/get-hackathon-home';
 export { markHackathonReady } from './mutations/mark-hackathon-ready';
 export { returnHackathonToDraft } from './mutations/return-hackathon-to-draft';
+export { startHackathonJudging } from './mutations/start-hackathon-judging';
 export type { MarkReadyInput } from './schemas/mark-ready-schema';
 export type { HackathonSetupSummary } from './lib/build-setup-summary';
 export {

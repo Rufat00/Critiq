@@ -112,13 +112,24 @@ Readiness validates category configuration, project eligibility, and active room
 capacity. Every active, non-disqualified project must have an assigned room and
 table number; missing locations block Ready and cannot be acknowledged away.
 Judge accounts, category access, and conflicts do not affect readiness. Judges
-can still be added in Ready; judge availability checks belong to the future
-start-judging workflow.
+can still be added in Ready. Starting currently rechecks configuration; judge
+availability and assignment scheduling remain future workflows.
 
 Draft/Ready transitions serialize on the hackathon row and commit with audits.
 Configuration mutations use the same hackathon lock and require Draft status.
-Judge management remains available in both Draft and Ready. Organizers can return
-to Draft before judging starts to unlock the other settings.
+Judge management remains available in both Draft and Ready. Formatting a ready
+event also requires returning to Draft first. Organizers can return
+to Draft before judging starts to unlock the other settings. Ready keeps projects,
+rooms, categories (including rubric weights), and settings available for read-only
+review. Room CSV export is available on both Home and Rooms.
+
+Starting judging requires an organizer and Ready status. The operation serializes
+on the hackathon row, revalidates setup, activates enabled categories with one
+shared `startedAt`, locks their rubrics, and commits the stage change with its audit.
+Duplicate starts and races with returning to Draft cannot both succeed. Home uses
+the persisted category start time for an elapsed timer that survives refreshes;
+Ready shows 00:00 behind a softened start panel, which fades out after a successful
+start. This stage transition does not implement judge assignments or score entry.
 
 ## Category configuration
 

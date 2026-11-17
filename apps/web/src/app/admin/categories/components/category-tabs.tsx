@@ -7,6 +7,7 @@ import {
   RiCheckLine,
   RiSubtractLine,
   RiLockLine,
+  RiInformationLine,
 } from '@remixicon/react';
 import type { JudgingCategories } from '@critiq/core/categories';
 import { judgingMethodLabels } from '@critiq/constants';
@@ -36,27 +37,30 @@ export function CategoryTabs({
   return (
     <div className="flex flex-col gap-5">
       {status !== 'DRAFT' && (
-        <Alert>
+        <Alert variant="info">
+          <RiInformationLine aria-hidden="true" />
           <AlertDescription>
             Configuration is locked. Categories can only be changed while the
             hackathon is in draft.
           </AlertDescription>
         </Alert>
       )}
-      <div className="grid gap-3 sm:grid-cols-2">
-        <CategoryFormDialog
-          categories={categories}
-          kind="track"
-          locked={status !== 'DRAFT'}
-          onSaved={toast.success}
-        />
-        <CategoryFormDialog
-          categories={categories}
-          kind="challenge"
-          locked={status !== 'DRAFT'}
-          onSaved={toast.success}
-        />
-      </div>
+      {status === 'DRAFT' && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <CategoryFormDialog
+            categories={categories}
+            kind="track"
+            locked={status !== 'DRAFT'}
+            onSaved={toast.success}
+          />
+          <CategoryFormDialog
+            categories={categories}
+            kind="challenge"
+            locked={status !== 'DRAFT'}
+            onSaved={toast.success}
+          />
+        </div>
+      )}
       <Tabs defaultValue="tracks" className="gap-6">
         <TabsList aria-label="Category views">
           <TabsTrigger value="tracks">
@@ -160,6 +164,9 @@ export function CategoryTabs({
                         }
                       />
                     </div>
+                    {status !== 'DRAFT' && track.criteria.length > 0 && (
+                      <ReadOnlyRubric criteria={track.criteria} />
+                    )}
                   </article>
                 );
               })}
@@ -250,6 +257,9 @@ export function CategoryTabs({
                       }
                     />
                   </div>
+                  {status !== 'DRAFT' && challenge.criteria.length > 0 && (
+                    <ReadOnlyRubric criteria={challenge.criteria} />
+                  )}
                 </article>
               ))}
               {!challenges.length && (
@@ -370,5 +380,27 @@ function Membership({ included }: { included: boolean }) {
         <RiSubtractLine className="size-4" aria-hidden="true" />
       )}
     </span>
+  );
+}
+
+function ReadOnlyRubric({
+  criteria,
+}: {
+  criteria: { id: string; name: string; weight: number }[];
+}) {
+  return (
+    <div className="col-span-full flex flex-col gap-2">
+      <p className="text-xs text-muted-foreground">Rubric criteria</p>
+      <dl className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
+        {criteria.map((criterion) => (
+          <div key={criterion.id} className="flex gap-2">
+            <dt className="break-words">{criterion.name}</dt>
+            <dd className="text-muted-foreground tabular-nums">
+              {criterion.weight}%
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }

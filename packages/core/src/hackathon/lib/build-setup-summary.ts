@@ -96,6 +96,12 @@ export function buildSetupSummary({ hackathon: h, judges }: SetupSnapshot) {
     id: h.id,
     name: h.name,
     status: h.status,
+    judgingStartedAt:
+      h.categories
+        .flatMap((category) =>
+          category.startedAt ? [category.startedAt.toISOString()] : [],
+        )
+        .sort()[0] ?? null,
     scoreScale: h.scoreScale,
     blockers,
     warnings,

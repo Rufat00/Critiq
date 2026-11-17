@@ -1,4 +1,5 @@
 'use client';
+import { RiInformationLine } from '@remixicon/react';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Collapsible } from 'radix-ui';
@@ -55,7 +56,8 @@ export function RoomsSection({ data }: { data: RoomsPageData }) {
         description="Manage judging locations and project locations."
       />
       {data.locked && (
-        <Alert>
+        <Alert variant="info">
+          <RiInformationLine aria-hidden="true" />
           <AlertDescription>
             Room setup is locked. Return the hackathon to draft to change rooms
             or track access.

@@ -1,4 +1,6 @@
 'use client';
+
+import { RiInformationLine } from '@remixicon/react';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useForm, useStore } from '@tanstack/react-form';
 import { useRouter } from 'next/navigation';
@@ -351,7 +353,8 @@ export function ProjectFormDialog({
                       Projects in specialized tracks are excluded from Overall.
                     </p>
                     {project && values.trackId !== project.trackId && (
-                      <Alert>
+                      <Alert variant="info">
+                        <RiInformationLine aria-hidden="true" />
                         <AlertDescription>
                           Moving a project automatically updates its room and
                           table based on its order in the new track. Challenges

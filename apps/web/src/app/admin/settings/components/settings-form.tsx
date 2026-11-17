@@ -1,5 +1,6 @@
 'use client';
 
+import { RiInformationLine } from '@remixicon/react';
 import { useRef, useState } from 'react';
 import { useForm, useStore } from '@tanstack/react-form';
 import { useRouter } from 'next/navigation';
@@ -78,7 +79,7 @@ export function SettingsForm({ settings }: { settings: HackathonSettings }) {
       <Tabs defaultValue="overall">
         <TabsList aria-label="Settings">
           <TabsTrigger value="overall">Overall</TabsTrigger>
-          {settings.canResetData && (
+          {settings.canResetData && settings.status !== 'READY' && (
             <TabsTrigger value="danger">Danger zone</TabsTrigger>
           )}
         </TabsList>
@@ -88,7 +89,8 @@ export function SettingsForm({ settings }: { settings: HackathonSettings }) {
           className="flex flex-col gap-6 data-[state=inactive]:hidden"
         >
           {locked && (
-            <Alert>
+            <Alert variant="info">
+              <RiInformationLine aria-hidden="true" />
               <AlertTitle>Settings are read-only</AlertTitle>
               <AlertDescription>
                 {settings.status === 'READY'
@@ -263,7 +265,7 @@ export function SettingsForm({ settings }: { settings: HackathonSettings }) {
             </div>
           </form>
         </TabsContent>
-        {settings.canResetData && (
+        {settings.canResetData && settings.status !== 'READY' && (
           <TabsContent value="danger">
             {locked && (
               <p className="py-4 text-sm text-muted-foreground">

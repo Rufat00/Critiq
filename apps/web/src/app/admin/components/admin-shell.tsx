@@ -73,7 +73,6 @@ function AdminNavigation({
     ...(navigation.configuration
       ? configurationItems.map((item) => ({
           ...item,
-          href: navigation.configurationLocked ? null : item.href,
           disabledReason: navigation.lockReason,
         }))
       : []),
@@ -122,7 +121,9 @@ function AdminNavigation({
                       variant="ghost"
                       disabled
                       title={disabledReason}
-                      aria-label={`${label}. ${disabledReason}`}
+                      aria-label={
+                        disabledReason ? `${label}. ${disabledReason}` : label
+                      }
                     >
                       <Icon aria-hidden="true" data-icon="inline-start" />
                       {label}
@@ -165,11 +166,13 @@ function AdminNavigation({
             </PopoverContent>
           </Popover>
         </div>
-        {navigation.configuration && navigation.configurationLocked && (
-          <p className="col-span-full hidden text-center text-xs text-muted-foreground md:block">
-            {navigation.lockReason}
-          </p>
-        )}
+        {navigation.configuration &&
+          navigation.configurationLocked &&
+          navigation.lockReason && (
+            <p className="col-span-full hidden text-center text-xs text-muted-foreground md:block">
+              {navigation.lockReason}
+            </p>
+          )}
       </header>
       <AdminMobileNavigation
         items={items}

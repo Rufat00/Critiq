@@ -9,7 +9,7 @@ type NavigationItem = {
   label: string;
   href: string | null;
   icon: typeof RiHome5Line;
-  disabledReason: string;
+  disabledReason?: string;
 };
 
 const tabClassName =
@@ -55,7 +55,9 @@ export function AdminMobileNavigation({
                 type="button"
                 disabled
                 title={disabledReason}
-                aria-label={`${label}. ${disabledReason}`}
+                aria-label={
+                  disabledReason ? `${label}. ${disabledReason}` : label
+                }
                 className={tabClassName}
               >
                 <Icon className="size-6" aria-hidden="true" />

@@ -1,4 +1,6 @@
 'use client';
+
+import { RiInformationLine } from '@remixicon/react';
 import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -47,7 +49,8 @@ export function ProjectsSection({ data }: { data: ProjectsPageData }) {
   return (
     <div className="flex min-w-0 flex-col gap-6">
       {data.locked && (
-        <Alert>
+        <Alert variant="info">
+          <RiInformationLine aria-hidden="true" />
           <AlertDescription>
             Project setup is locked. Return the hackathon to draft before
             adding, importing, editing, moving, or deleting projects.

@@ -18,6 +18,8 @@ import { Button } from '@/components/ui/button';
 import { ReadinessActions } from './components/readiness-actions';
 import { getAdminHome } from '../queries';
 import { stageLabels } from '../lib/stage-navigation';
+import { JudgingStageHome } from './components/judging-stage-home';
+import { ExportRoomsButton } from '../rooms/components/export-rooms-button';
 
 export default async function Page({
   searchParams,
@@ -29,24 +31,25 @@ export default async function Page({
     searchParams,
     getAuthContext(),
   ]);
+  if (summary.status === 'READY' || summary.status === 'JUDGING') {
+    return <JudgingStageHome summary={summary} />;
+  }
   const isDraft = summary.status === 'DRAFT';
-  const isReady = summary.status === 'READY';
   return (
     <>
       <AdminHeading
+        actions={
+          <ExportRoomsButton search="" disabled={false} label="Export rooms" />
+        }
         title={
           isDraft
             ? `Let’s prepare for ${summary.name ?? 'your hackathon'} Judging!`
-            : isReady
-              ? `${summary.name ?? 'Your hackathon'} is ready for judging`
-              : `${summary.name ?? 'Your hackathon'} · ${stageLabels[summary.status]}`
+            : `${summary.name ?? 'Your hackathon'} · ${stageLabels[summary.status]}`
         }
         description={
           isDraft
             ? 'Get the essentials in place, check your setup, and give your judges a smooth start.'
-            : isReady
-              ? 'Judging has not started. All settings are locked except judges. Return to draft to change your setup.'
-              : 'Your event configuration is locked. Operational monitoring and results will be available as those workflows are implemented.'
+            : 'Your event configuration is locked. Operational monitoring and results will be available as those workflows are implemented.'
         }
       />
       {!summary.name && (
@@ -123,9 +126,7 @@ export default async function Page({
         ) : (
           <Card>
             <CardHeader>
-              <CardTitle>
-                {isReady ? 'Final event summary' : 'Event summary'}
-              </CardTitle>
+              <CardTitle>Event summary</CardTitle>
               <CardDescription>
                 Competition configuration · {summary.scoreScale}-point score
                 scale
@@ -166,7 +167,6 @@ export default async function Page({
           <VideoCard video={videos.setup} />
         </aside>
       </div>
-      {isReady && <ReadinessActions summary={summary} />}
     </>
   );
 }

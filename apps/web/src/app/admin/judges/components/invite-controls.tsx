@@ -1,4 +1,6 @@
 'use client';
+
+import { RiInformationLine } from '@remixicon/react';
 import { useRef, useState, useTransition, useEffect } from 'react';
 import { useForm, useStore } from '@tanstack/react-form';
 import { useRouter } from 'next/navigation';
@@ -312,7 +314,8 @@ export function InviteControls({
           <ResponsiveDialogBody>
             <div className="flex flex-col gap-4">
               {expired && (
-                <Alert>
+                <Alert variant="info">
+                  <RiInformationLine aria-hidden="true" />
                   <AlertDescription>
                     This invitation has expired. Generate a new one to continue.
                   </AlertDescription>

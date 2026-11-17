@@ -23,11 +23,11 @@ export function getStageNavigation(stage: HackathonStage) {
       ...(live || reviewing ? ['Flags'] : []),
       ...(reviewing || completed ? ['Activity'] : []),
     ],
-    configuration: stage === 'DRAFT' || stage === 'READY' || completed,
+    configuration: true,
     configurationLocked: stage !== 'DRAFT',
     lockReason:
       stage === 'READY'
-        ? 'Return to draft to change configuration.'
+        ? undefined
         : 'Competition settings are read-only after judging starts.',
   };
 }

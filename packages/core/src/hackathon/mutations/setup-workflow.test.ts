@@ -8,6 +8,7 @@ process.env.DATABASE_URL ??=
   'postgresql://test:test@127.0.0.1:5432/critiq_test';
 const { getHackathonHome } = await import('../queries/get-hackathon-home');
 const { markHackathonReady } = await import('./mark-hackathon-ready');
+const { startHackathonJudging } = await import('./start-hackathon-judging');
 const { returnHackathonToDraft } = await import('./return-hackathon-to-draft');
 const { AppError } = await import('../../shared/errors');
 const { lockDraft } = await import('../lib/lock-draft');
@@ -39,6 +40,34 @@ function database(failAudit = false) {
         update: async ({ data }: { data: { status: string } }) => {
           draft.data.hackathon.status =
             data.status as typeof draft.data.hackathon.status;
+        },
+      },
+      judgingCategory: {
+        updateMany: async ({
+          where,
+          data,
+        }: {
+          where: { hackathonId: string; isEnabled: boolean };
+          data: { status: 'ACTIVE'; startedAt: Date };
+        }) => {
+          assert.equal(where.hackathonId, draft.data.hackathon.id);
+          for (const category of draft.data.hackathon.categories) {
+            if (category.isEnabled === where.isEnabled)
+              Object.assign(category, data);
+          }
+        },
+      },
+      rubric: {
+        updateMany: async ({
+          where,
+        }: {
+          where: { category: { hackathonId: string; isEnabled: boolean } };
+        }) => {
+          assert.equal(where.category.hackathonId, draft.data.hackathon.id);
+          for (const category of draft.data.hackathon.categories) {
+            if (category.isEnabled && category.rubric)
+              category.rubric.isLocked = true;
+          }
         },
       },
       user: { findMany: async () => draft.data.judges },
@@ -221,4 +250,110 @@ test('row lock timestamps do not invalidate readiness confirmation', () => {
   const before = buildSetupSummary(data).fingerprint;
   data.hackathon.updatedAt = new Date();
   assert.equal(buildSetupSummary(data).fingerprint, before);
+});
+
+async function readyDatabase(failAudit = false) {
+  const db = database(failAudit);
+  db.read().data.hackathon.status = 'READY';
+  return db;
+}
+
+test('starting is scoped and restricted to organizers in Ready', async () => {
+  const db = await readyDatabase();
+  for (const actor of [
+    { type: 'user', userId: 'judge', role: 'JUDGE' },
+    { type: 'system', service: 'test' },
+  ] as AppContext['actor'][]) {
+    await rejectsCode(
+      startHackathonJudging({ ...db.ctx, actor }, {}),
+      'FORBIDDEN',
+    );
+  }
+  await rejectsCode(
+    startHackathonJudging({ ...db.ctx, hackathonId: null }, {}),
+    'INVALID_STATE',
+  );
+  await rejectsCode(
+    startHackathonJudging({ ...db.ctx, hackathonId: 'foreign' }, {}),
+    'INVALID_STATE',
+  );
+  for (const status of [
+    'DRAFT',
+    'JUDGING',
+    'PAUSED',
+    'DELIBERATION',
+    'COMPLETED',
+  ] as const) {
+    db.read().data.hackathon.status = status;
+    await rejectsCode(startHackathonJudging(db.ctx, {}), 'INVALID_STATE');
+  }
+  assert.equal(db.read().audits.length, 0);
+});
+
+test('start activates enabled categories, freezes rubrics and persists the timer with one audit', async () => {
+  const db = await readyDatabase();
+  const category = db.read().data.hackathon.categories[0]!;
+  category.rubric = {
+    id: 'rubric',
+    categoryId: category.id,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    isLocked: false,
+    criteria: [],
+  };
+  db.read().data.hackathon.categories.push({
+    ...structuredClone(category),
+    id: 'disabled',
+    isEnabled: false,
+  });
+  const results = await Promise.allSettled([
+    startHackathonJudging(db.ctx, {}),
+    startHackathonJudging(db.ctx, {}),
+  ]);
+  assert.equal(
+    results.filter((result) => result.status === 'fulfilled').length,
+    1,
+  );
+  const saved = db.read().data.hackathon;
+  assert.equal(saved.status, 'JUDGING');
+  assert.equal(saved.categories[0]!.status, 'ACTIVE');
+  assert.equal(saved.categories[0]!.rubric!.isLocked, true);
+  assert.equal(saved.categories[1]!.status, 'NOT_STARTED');
+  assert.equal(saved.categories[1]!.startedAt, null);
+  assert.equal(saved.categories[1]!.rubric!.isLocked, false);
+  assert.equal(db.read().audits.length, 1);
+  const summary = await getHackathonHome(db.ctx, {});
+  assert.equal(
+    summary.judgingStartedAt,
+    saved.categories[0]!.startedAt!.toISOString(),
+  );
+  await rejectsCode(returnHackathonToDraft(db.ctx, {}), 'INVALID_STATE');
+});
+
+test('start revalidates setup and rolls back the stage and categories on failure', async () => {
+  const invalid = await readyDatabase();
+  invalid.read().data.hackathon.projects[0]!.roomId = null;
+  await rejectsCode(startHackathonJudging(invalid.ctx, {}), 'INVALID_STATE');
+  assert.equal(invalid.read().data.hackathon.status, 'READY');
+  const failing = await readyDatabase(true);
+  const before = structuredClone(failing.read());
+  await rejectsCode(
+    startHackathonJudging(failing.ctx, {}),
+    'INTERNAL_SERVER_ERROR',
+  );
+  assert.deepEqual(failing.read(), before);
+});
+
+test('start and return to draft cannot both succeed concurrently', async () => {
+  const db = await readyDatabase();
+  const outcomes = await Promise.allSettled([
+    startHackathonJudging(db.ctx, {}),
+    returnHackathonToDraft(db.ctx, {}),
+  ]);
+  assert.equal(
+    outcomes.filter((result) => result.status === 'fulfilled').length,
+    1,
+  );
+  assert.equal(db.read().audits.length, 1);
+  assert.equal(db.read().data.hackathon.status, 'JUDGING');
 });

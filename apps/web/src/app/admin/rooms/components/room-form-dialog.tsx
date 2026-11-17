@@ -3,7 +3,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useForm, useStore } from '@tanstack/react-form';
 import { useRouter } from 'next/navigation';
 import {
-  RiAlertLine,
+  RiInformationLine,
   RiArrowLeftLine,
   RiArrowRightLine,
 } from '@remixicon/react';
@@ -348,8 +348,8 @@ function RoomConfigurationForm({
           <RoomFormPanel editing={editing} step={step} value="spots">
             <div className="flex flex-col gap-6">
               {editing && (
-                <Alert variant="warning">
-                  <RiAlertLine aria-hidden="true" />
+                <Alert variant="info">
+                  <RiInformationLine aria-hidden="true" />
                   <AlertTitle>Project numbers may change</AlertTitle>
                   <AlertDescription>
                     Saving room changes may reassign existing project numbers

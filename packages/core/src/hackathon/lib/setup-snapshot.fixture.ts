@@ -33,6 +33,8 @@ export function snapshot(): SetupSnapshot {
       categories: [
         {
           id: 'overall',
+          status: 'NOT_STARTED',
+          startedAt: null,
           name: 'Overall',
           kind: 'OVERALL',
           isEnabled: true,

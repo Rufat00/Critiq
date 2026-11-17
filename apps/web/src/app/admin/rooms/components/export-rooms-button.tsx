@@ -9,9 +9,11 @@ import { exportRoomProjectsAction } from '../actions';
 export function ExportRoomsButton({
   search,
   disabled,
+  label = 'Export CSV',
 }: {
   search: string;
   disabled: boolean;
+  label?: string;
 }) {
   const [pending, startTransition] = useTransition();
   return (
@@ -56,7 +58,7 @@ export function ExportRoomsButton({
       }
     >
       <RiDownloadLine data-icon="inline-start" />
-      Export CSV
+      {label}
     </LoadingButton>
   );
 }

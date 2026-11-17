@@ -15,16 +15,20 @@ export const formatHackathon = createMutation({
         AppErrorCode.FORBIDDEN,
         'Only the owner can format this event.',
       );
-    // Explicit full formatting is allowed at any stage. Lock the same event row
-    // as configuration mutations and reject stale or mismatched confirmations.
+    // Ready allows only judge edits and explicit stage transitions. Lock the
+    // event row so formatting cannot bypass that boundary.
     const locked = await ctx.db.hackathon.updateMany({
-      where: { id: hackathonId, name: input.eventName },
+      where: {
+        id: hackathonId,
+        name: input.eventName,
+        status: { not: 'READY' },
+      },
       data: { status: 'DRAFT' },
     });
     if (locked.count !== 1)
       throw new AppError(
         AppErrorCode.CONFLICT,
-        'The event name does not match. Refresh and enter the current event name exactly.',
+        'Return to draft before formatting a ready event. Otherwise, refresh and enter the current event name exactly.',
         { eventName: ['Enter the current event name exactly as shown.'] },
       );
     const overall = await ctx.db.judgingCategory.findFirst({
