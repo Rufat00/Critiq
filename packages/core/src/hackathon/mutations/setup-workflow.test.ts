@@ -1,3 +1,4 @@
+import { judgingSetupFingerprint } from '../../judging/shared/judging-setup-fingerprint';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { AppContext } from '../../context';
@@ -14,7 +15,11 @@ const { AppError } = await import('../../shared/errors');
 const { lockDraft } = await import('../lib/lock-draft');
 
 function database(failAudit = false) {
-  let state = { data: snapshot(), audits: [] as unknown[] };
+  let state = {
+    data: snapshot(),
+    audits: [] as unknown[],
+    judgingConfigured: true,
+  };
   let queue = Promise.resolve();
   function client(draft: typeof state) {
     return {
@@ -41,6 +46,19 @@ function database(failAudit = false) {
           draft.data.hackathon.status =
             data.status as typeof draft.data.hackathon.status;
         },
+      },
+      judgingConfiguration: {
+        findUnique: async () =>
+          draft.judgingConfigured
+            ? {
+                revision: 1,
+                policy: {
+                  setupFingerprint: judgingSetupFingerprint(draft.data),
+                  endsAt: '2099-01-01T00:00:00.000Z',
+                },
+                plan: { feasible: true },
+              }
+            : null,
       },
       judgingCategory: {
         updateMany: async ({
@@ -356,4 +374,11 @@ test('start and return to draft cannot both succeed concurrently', async () => {
   );
   assert.equal(db.read().audits.length, 1);
   assert.equal(db.read().data.hackathon.status, 'JUDGING');
+});
+
+test('starting without a frozen judging plan rolls back the stage', async () => {
+  const db = await readyDatabase();
+  db.read().judgingConfigured = false;
+  await rejectsCode(startHackathonJudging(db.ctx, {}), 'INVALID_STATE');
+  assert.equal(db.read().data.hackathon.status, 'READY');
 });

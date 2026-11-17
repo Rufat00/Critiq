@@ -14,10 +14,12 @@
     "./categories": "./src/categories/index.ts",
     "./judges": "./src/judges/index.ts",
     "./projects": "./src/projects/index.ts",
-    "./rooms": "./src/rooms/index.ts"
+    "./rooms": "./src/rooms/index.ts",
+    "./judging": "./src/judging/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:judging": "node --import ../db/node_modules/tsx/dist/loader.mjs --test src/judging/**/*.test.ts"
   },
   "dependencies": {
     "@critiq/constants": "workspace:*",

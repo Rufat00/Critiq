@@ -10,3 +10,5 @@ export const rubricWeightOptions = [
 
 export const judgeQrInvitationMinutes = 20;
 export const judgeQrInvitationMaxUses = 100;
+
+export { ordinalRatingOptions } from './judging';

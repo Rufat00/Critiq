@@ -1,3 +1,4 @@
+import { judgingSetupFingerprint } from '../../judging/shared/judging-setup-fingerprint';
 import { z } from 'zod';
 import { requireHackathonId } from '../../context';
 import { AppError, AppErrorCode } from '../../shared/errors';
@@ -7,10 +8,12 @@ import { buildSetupSummary } from '../lib/build-setup-summary';
 
 export const startHackathonJudging = createMutation({
   name: 'hackathon.start-judging',
-  schema: z.object({}),
+  schema: z.object({
+    feasibilityOverrideReason: z.string().trim().min(10).max(2000).optional(),
+  }),
   roles: ['OWNER', 'ADMIN'],
 })(
-  async ({ ctx }) => {
+  async ({ ctx, input }) => {
     const id = requireHackathonId(ctx);
     // Serialize with judge edits, configuration writes and returning to draft.
     const locked = await ctx.db.hackathon.updateMany({
@@ -38,6 +41,30 @@ export const startHackathonJudging = createMutation({
         AppErrorCode.INVALID_STATE,
         'Judging has already started for a category. Refresh and review the event.',
       );
+    const config = await ctx.db.judgingConfiguration.findUnique({
+      where: { hackathonId: id },
+    });
+    const policy = config?.policy as
+      | { setupFingerprint?: string; endsAt?: string }
+      | undefined;
+    if (
+      !config ||
+      policy?.setupFingerprint !== judgingSetupFingerprint(snapshot) ||
+      !policy.endsAt ||
+      new Date(policy.endsAt) <= new Date()
+    )
+      throw new AppError(
+        AppErrorCode.INVALID_STATE,
+        'Configure judging and review the current plan before starting.',
+      );
+    if (
+      !(config.plan as { feasible?: boolean }).feasible &&
+      !input.feasibilityOverrideReason
+    )
+      throw new AppError(
+        AppErrorCode.INVALID_STATE,
+        'Minimum coverage is estimated infeasible. Resolve the shortfall or acknowledge it with a reason.',
+      );
     const startedAt = new Date();
     await ctx.db.judgingCategory.updateMany({
       where: { hackathonId: id, isEnabled: true },
@@ -54,7 +81,8 @@ export const startHackathonJudging = createMutation({
       entityType: 'Hackathon',
       getEntityId: ({ result }) => result.id,
       getBefore: () => ({ status: 'READY' }),
-      getAfter: ({ result }) => ({
+      getAfter: ({ result, input }) => ({
+        feasibilityOverrideReason: input.feasibilityOverrideReason ?? null,
         status: 'JUDGING',
         startedAt: result.startedAt,
       }),

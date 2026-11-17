@@ -42,6 +42,15 @@ export const formatHackathon = createMutation({
       );
 
     // Delete dependent judging data through projects before removing rubrics/users.
+    await ctx.db.judgingVisit.deleteMany({ where: { hackathonId } });
+    await ctx.db.roomStayEpoch.deleteMany({ where: { hackathonId } });
+    await ctx.db.judgingConfiguration.deleteMany({ where: { hackathonId } });
+    await ctx.db.competitionResultSnapshot.deleteMany({
+      where: { category: { hackathonId } },
+    });
+    await ctx.db.rankingRevision.deleteMany({
+      where: { category: { hackathonId } },
+    });
     const projects = await ctx.db.project.deleteMany({
       where: { hackathonId },
     });
@@ -62,7 +71,8 @@ export const formatHackathon = createMutation({
         method: 'RELATIVE',
         status: 'NOT_STARTED',
         timerSeconds: 300,
-        minEvaluations: 4,
+        minEvaluations: 3,
+        maxEvaluations: 9,
         targetEvaluations: null,
         isVisible: true,
         isEnabled: true,

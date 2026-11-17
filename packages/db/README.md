@@ -129,7 +129,7 @@ shared `startedAt`, locks their rubrics, and commits the stage change with its a
 Duplicate starts and races with returning to Draft cannot both succeed. Home uses
 the persisted category start time for an elapsed timer that survives refreshes;
 Ready shows 00:00 behind a softened start panel, which fades out after a successful
-start. This stage transition does not implement judge assignments or score entry.
+start. Judge assignment and score-entry APIs are implemented in core; see the judging API guide below.
 
 ## Category configuration
 
@@ -144,8 +144,9 @@ database-generated default because the choice depends on `kind`.
 Apply both category-method migrations before using the page. Existing challenge
 rows must already use a supported method before the compatibility constraint can
 be applied; disposable development data may be reset explicitly by its owner.
-Rating Scale uses the hackathon's configured 5- or 10-point scale; score entry
-and result calculation remain future workflows.
+Rating Scale uses five ordered endorsements, independently of the event rubric scale.
+Judging APIs and result calculation are documented in
+[the core judging API guide](../core/docs/judging-api.md).
 
 The matrix shows challenge eligibility across tracks using explicit `ChallengeTrack` links,
 including Overall;
@@ -214,3 +215,19 @@ capacities. Projects are retained; overflow becomes unassigned and numbering is
 compacted globally. Projects with judging activity block changes to their locations.
 Deletion and placement audits commit together, preserving original room IDs in
 placement snapshots; any failure rolls back the entire operation.
+
+## Judging workflow persistence
+
+The judging migration adds physical visits, frozen reachable room stay epochs,
+versioned policy/plan storage, ranking revisions, ordinal votes, evidence exclusion
+and immutable result snapshots. Partial unique indexes restrict active physical
+visits to one per judge and project, and current room stays to one per judge.
+Evaluations are unique per category/judge/project independently of assignment
+retries. Ordinal values are 1–5; coverage bounds and positive revisions/durations
+are checked by SQL. Eligibility, frozen rubric bounds, scope/identity matching,
+reservation expiry and all scoring rules are enforced in core transactions.
+
+Apply with `pnpm db:deploy` before using judging actions. The integration runner
+only migrates its disposable database; running tests does not migrate the local
+application database. Existing setup must call `configureJudging` and review its
+plan before starting. See the core API guide for the complete lifecycle.
