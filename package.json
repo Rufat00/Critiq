@@ -19,7 +19,9 @@
     "db:check": "pnpm --filter @critiq/db run check",
     "dev": "pnpm --filter @critiq/web dev",
     "build": "pnpm --filter @critiq/web build",
-    "start": "pnpm --filter @critiq/web start"
+    "start": "pnpm --filter @critiq/web start",
+    "test:judging": "node --import ./packages/db/node_modules/tsx/dist/loader.mjs --test packages/core/src/judging/**/*.test.ts",
+    "test:judging:integration": "node --import ./packages/db/node_modules/tsx/dist/loader.mjs packages/db/scripts/test-judging.ts"
   },
   "devDependencies": {
     "prettier": "3.8.4",

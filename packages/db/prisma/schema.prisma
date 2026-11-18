@@ -78,19 +78,20 @@ enum InvitationStatus {
 
 // ---------------- Better Auth ----------------
 model User {
-  id            String    @id
-  name          String
-  email         String    @unique
-  emailVerified Boolean   @default(false)
-  image         String?
-  username      String?   @unique
+  id                 String    @id
+  name               String
+  email              String    @unique
+  emailVerified      Boolean   @default(false)
+  image              String?
+  username           String?   @unique
   // Username plugin: configure displayUsername: false in auth.ts.
-  role          UserRole  @default(JUDGE)
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  sessions      Session[]
-  accounts      Account[]
+  role               UserRole  @default(JUDGE)
+  isActive           Boolean   @default(true)
+  isJudgingAvailable Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  sessions           Session[]
+  accounts           Account[]
 
   categoryMemberships JudgeCategory[]
   assignments         JudgingAssignment[] @relation("AssignedJudge")
@@ -102,6 +103,9 @@ model User {
   invitationsRedeemed Invitation[]        @relation("Invitee")
   auditLogs           AuditLog[]          @relation("AuditActor")
   conflicts           JudgeConflict[]
+  visits              JudgingVisit[]
+  roomStays           RoomStayEpoch[]
+  rankingRevisions    RankingRevision[]
 }
 
 model Session {
@@ -162,18 +166,21 @@ model Hackathon {
   name              String?
   status            HackathonStatus @default(DRAFT)
   scoreScale        Int             @default(5) // Validate: only 5 or 10.
-  // Eligible room projects completed before rotation; 0 disables rotation.
+  // Minimum completed reachable projects per room stay; 0 permits immediate movement.
   roomSwitchPercent Int             @default(25)
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
-  categories  JudgingCategory[]
-  tracks      Track[]
-  challenges  Challenge[]
-  rooms       Room[]
-  projects    Project[]
-  invitations Invitation[]
-  auditLogs   AuditLog[]
+  categories    JudgingCategory[]
+  tracks        Track[]
+  challenges    Challenge[]
+  rooms         Room[]
+  projects      Project[]
+  invitations   Invitation[]
+  auditLogs     AuditLog[]
+  judgingConfig JudgingConfiguration?
+  visits        JudgingVisit[]
+  roomStays     RoomStayEpoch[]
 }
 
 // The shared container for judging settings and results.
@@ -189,7 +196,8 @@ model JudgingCategory {
   method            JudgingMethod  @default(dbgenerated())
   status            CategoryStatus @default(NOT_STARTED)
   timerSeconds      Int            @default(300)
-  minEvaluations    Int            @default(4)
+  minEvaluations    Int            @default(3)
+  maxEvaluations    Int            @default(9)
   // Optional soft target: scheduler works toward this after minimum coverage.
   targetEvaluations Int?
   isVisible         Boolean        @default(true)
@@ -200,7 +208,7 @@ model JudgingCategory {
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
 
-  hackathon            Hackathon                 @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  hackathon            Hackathon                   @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
   track                Track?
   challenge            Challenge?
   rubric               Rubric?
@@ -210,6 +218,8 @@ model JudgingCategory {
   rankings             RelativeRanking[]
   invitationCategories InvitationCategory[]
   priorityProjects     CategoryProjectPriority[]
+  resultSnapshots      CompetitionResultSnapshot[]
+  rankingRevisions     RankingRevision[]
 
   @@unique([hackathonId, name])
   @@index([hackathonId, kind])
@@ -266,9 +276,11 @@ model Room {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  hackathon  Hackathon   @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  hackathon  Hackathon       @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
   projects   Project[]
   trackRooms TrackRoom[]
+  visits     JudgingVisit[]
+  stays      RoomStayEpoch[]
 
   @@unique([hackathonId, name])
 }
@@ -316,6 +328,7 @@ model Project {
   flags       ProjectFlag[]
   priorities  CategoryProjectPriority[]
   conflicts   JudgeConflict[]
+  visits      JudgingVisit[]
 
   @@unique([hackathonId, externalId])
   @@unique([hackathonId, tableNumber])
@@ -367,7 +380,7 @@ model JudgeConflict {
 model Rubric {
   id         String            @id @default(cuid())
   categoryId String            @unique
-  // Once judging starts, lock criteria/weights; versioning can be added later.
+  // Lock authoring at judging start; scoring versions freeze these criteria in JudgingConfiguration and its audits.
   isLocked   Boolean           @default(false)
   createdAt  DateTime          @default(now())
   updatedAt  DateTime          @updatedAt
@@ -403,6 +416,9 @@ model JudgingAssignment {
   // A judge can revisit a project only if explicitly permitted by scheduler.
   attempt    Int              @default(1)
 
+  visitId String?
+  visit   JudgingVisit? @relation(fields: [visitId], references: [id], onDelete: Cascade)
+
   category   JudgingCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   judge      User            @relation("AssignedJudge", fields: [judgeId], references: [id])
   project    Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -415,17 +431,21 @@ model JudgingAssignment {
 }
 
 model Evaluation {
-  id           String   @id @default(cuid())
-  assignmentId String   @unique
-  categoryId   String
-  judgeId      String
-  projectId    String
-  notes        String?
-  starred      Boolean  @default(false)
-  submittedAt  DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              String   @id @default(cuid())
+  assignmentId    String   @unique
+  categoryId      String
+  judgeId         String
+  projectId       String
+  notes           String?
+  starred         Boolean  @default(false)
+  submittedAt     DateTime @default(now())
+  updatedAt       DateTime @updatedAt
   // Optional rubric summary (cache); raw scores remain source of truth.
-  rubricTotal  Decimal? @db.Decimal(10, 4)
+  rubricTotal     Decimal? @db.Decimal(10, 4)
+  ordinalRating   Int?
+  scoringRevision Int      @default(1)
+  isExcluded      Boolean  @default(false)
+  exclusionReason String?
 
   assignment JudgingAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
   category   JudgingCategory   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
@@ -433,6 +453,7 @@ model Evaluation {
   project    Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
   scores     EvaluationScore[]
 
+  @@unique([categoryId, judgeId, projectId])
   @@index([categoryId, projectId])
   @@index([categoryId, judgeId])
 }
@@ -559,4 +580,83 @@ model AuditLog {
 
   @@index([hackathonId, createdAt])
   @@index([entityType, entityId])
+}
+
+// Frozen policy includes scoring algorithms, rubric ranges, eligibility and planning inputs.
+model JudgingConfiguration {
+  hackathonId String    @id
+  revision    Int       @default(1)
+  policy      Json
+  plan        Json
+  updatedAt   DateTime  @updatedAt
+  hackathon   Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+}
+
+model RoomStayEpoch {
+  id                  String         @id @default(cuid())
+  hackathonId         String
+  judgeId             String
+  roomId              String
+  reachableProjectIds String[]
+  physicalRoomSize    Int
+  thresholdPercent    Int
+  enteredAt           DateTime       @default(now())
+  exitedAt            DateTime?
+  moveReason          String?
+  travelMinutes       Float          @default(0)
+  hackathon           Hackathon      @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  judge               User           @relation(fields: [judgeId], references: [id], onDelete: Cascade)
+  room                Room           @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  visits              JudgingVisit[]
+
+  @@index([hackathonId, judgeId])
+}
+
+model JudgingVisit {
+  id               String              @id @default(cuid())
+  hackathonId      String
+  judgeId          String
+  projectId        String
+  roomId           String
+  epochId          String
+  requestKey       String
+  status           AssignmentStatus    @default(ASSIGNED)
+  reason           String
+  estimatedMinutes Float
+  createdAt        DateTime            @default(now())
+  expiresAt        DateTime
+  finishedAt       DateTime?
+  hackathon        Hackathon           @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  judge            User                @relation(fields: [judgeId], references: [id], onDelete: Restrict)
+  project          Project             @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  room             Room                @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  epoch            RoomStayEpoch       @relation(fields: [epochId], references: [id], onDelete: Restrict)
+  assignments      JudgingAssignment[]
+
+  @@unique([hackathonId, judgeId, requestKey])
+  @@index([hackathonId, status, expiresAt])
+}
+
+model RankingRevision {
+  categoryId String
+  judgeId    String
+  revision   Int             @default(0)
+  category   JudgingCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  judge      User            @relation(fields: [judgeId], references: [id], onDelete: Cascade)
+
+  @@id([categoryId, judgeId])
+}
+
+model CompetitionResultSnapshot {
+  id              String          @id @default(cuid())
+  categoryId      String
+  scoringRevision Int
+  evidence        Json
+  results         Json
+  exceptionReason String?
+  supersededAt    DateTime?
+  createdAt       DateTime        @default(now())
+  category        JudgingCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId, createdAt])
 }
