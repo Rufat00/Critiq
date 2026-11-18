@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { judgingQuery } from '../shared/judging-operation';
 import { loadJudgingState } from '../shared/load-judging-state';
 import { recommendCoverageTargets } from '../planning/recommend-coverage-targets';
-import { calculateRemainingJudgeMinutes } from '../shared/judge-time-math';
+import { getFullCoveragePlanningMinutes } from '../planning/get-full-coverage-planning-minutes';
 import { requireHackathonId } from '../../context';
 export const getJudgingPlan = judgingQuery(
   'judging.plan.get',
@@ -59,12 +59,11 @@ export const getJudgingPlan = judgingQuery(
         epoch = epochs.find((e) => e.exitedAt === null);
       return {
         id: j.judgeId,
-        minutes: calculateRemainingJudgeMinutes(
-          j.availableMinutes,
-          history.filter((v) => v.judgeId === j.judgeId),
-          epochs,
-          state.now,
-        ),
+        minutes: getFullCoveragePlanningMinutes({
+          ...state.policy,
+          projectCount: state.projects.length,
+          formMinutes: categories.map((c) => c.formMinutes),
+        }),
         competitionIds: state.categories
           .filter((c) => c.judges.some((m) => m.userId === j.judgeId))
           .map((c) => c.id),

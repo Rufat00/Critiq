@@ -12,7 +12,12 @@ export const updateHackathonSettings = createMutation({
     const id = await lockDraft(ctx);
     const before = await ctx.db.hackathon.findUnique({
       where: { id },
-      select: { name: true, scoreScale: true, roomSwitchPercent: true },
+      select: {
+        name: true,
+        scoreScale: true,
+        roomSwitchPercent: true,
+        judgingSeconds: true,
+      },
     });
     if (!before)
       throw new AppError(AppErrorCode.NOT_FOUND, 'Hackathon not found.');
@@ -46,6 +51,7 @@ export const updateHackathonSettings = createMutation({
         id: true,
         name: true,
         scoreScale: true,
+        judgingSeconds: true,
         roomSwitchPercent: true,
         status: true,
       },

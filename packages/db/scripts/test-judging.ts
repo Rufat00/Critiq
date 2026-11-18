@@ -57,7 +57,9 @@ try {
       './packages/db/node_modules/tsx/dist/loader.mjs',
       '--test',
       '--test-concurrency=1',
-      'packages/core/src/judging/mutations/judging.integration.test.ts',
+      process.argv.includes('--npc')
+        ? 'packages/core/src/judging/mutations/npc-judges.integration.test.ts'
+        : 'packages/core/src/judging/mutations/judging.integration.test.ts',
     ],
     { cwd: root, env, stdio: 'inherit' },
   );

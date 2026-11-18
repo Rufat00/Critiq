@@ -34,6 +34,7 @@ export function SettingsForm({ settings }: { settings: HackathonSettings }) {
       name: settings.name ?? '',
       scoreScale: settings.scoreScale as 5 | 10,
       roomSwitchPercent: settings.roomSwitchPercent,
+      judgingSeconds: settings.judgingSeconds,
     },
     onSubmit: async ({ value }) => {
       if (locked || submitting.current) return;
@@ -52,6 +53,7 @@ export function SettingsForm({ settings }: { settings: HackathonSettings }) {
           name: saved.name ?? '',
           scoreScale: saved.scoreScale as 5 | 10,
           roomSwitchPercent: saved.roomSwitchPercent,
+          judgingSeconds: saved.judgingSeconds,
         });
         toast.success('Settings saved.');
         router.refresh();
@@ -172,6 +174,41 @@ export function SettingsForm({ settings }: { settings: HackathonSettings }) {
                     </ToggleGroup>
                     <FieldError id="score-scale-error">
                       {fieldErrors.scoreScale?.join(' ')}
+                    </FieldError>
+                  </SettingItem>
+                )}
+              </form.Field>
+              <Separator />
+              <form.Field name="judgingSeconds">
+                {(field) => (
+                  <SettingItem
+                    title="Judging time per project"
+                    description="Presentation timer for every track and challenge. Reaching zero does not end a presentation."
+                    htmlFor="judging-minutes"
+                    invalid={Boolean(fieldErrors.judgingSeconds)}
+                    disabled={disabled}
+                  >
+                    <Input
+                      id="judging-minutes"
+                      type="number"
+                      min={1}
+                      max={60}
+                      step={1}
+                      value={field.state.value / 60}
+                      onBlur={field.handleBlur}
+                      onChange={(event) => {
+                        field.handleChange(Number(event.target.value) * 60);
+                        clearErrors();
+                      }}
+                      disabled={disabled}
+                      aria-invalid={Boolean(fieldErrors.judgingSeconds)}
+                      aria-describedby="judging-time-error"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Minutes · default 5
+                    </p>
+                    <FieldError id="judging-time-error">
+                      {fieldErrors.judgingSeconds?.join(' ')}
                     </FieldError>
                   </SettingItem>
                 )}

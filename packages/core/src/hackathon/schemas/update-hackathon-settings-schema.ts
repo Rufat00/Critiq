@@ -9,6 +9,7 @@ export const updateHackathonSettingsSchema = z.object({
   scoreScale: z.union([z.literal(5), z.literal(10)], {
     error: 'Choose a 5-point or 10-point scale.',
   }),
+  judgingSeconds: z.number().int().min(60).max(3600),
   roomSwitchPercent: z
     .number()
     .int()

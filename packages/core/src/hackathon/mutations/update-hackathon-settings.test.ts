@@ -10,6 +10,7 @@ const { AppError } = await import('../../shared/errors');
 
 const input = {
   name: ' New hackathon ',
+  judgingSeconds: 300,
   scoreScale: 10 as const,
   roomSwitchPercent: 50,
 };
@@ -100,6 +101,7 @@ test('settings save trims name, persists scale and every allowed room threshold,
     });
     assert.equal(saved.settings.name, 'New hackathon');
     assert.equal(saved.settings.scoreScale, 10);
+    assert.equal(saved.settings.judgingSeconds, 300);
     assert.equal(f.read().event.roomSwitchPercent, percent);
     assert.equal(f.read().audits.length, 1);
     assert.equal(
@@ -114,6 +116,7 @@ test('invalid names, scales, fractional percentages, bounds and non-five steps c
     { name: ' ' },
     { name: 'a'.repeat(101) },
     { scoreScale: 7 },
+    ...[0, 59, 3601, 120.5].map((judgingSeconds) => ({ judgingSeconds })),
     ...[-5, 101, 12, 2.5].map((roomSwitchPercent) => ({ roomSwitchPercent })),
   ]) {
     await rejects(

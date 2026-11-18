@@ -70,7 +70,6 @@ export const formatHackathon = createMutation({
         description: 'The default judging track.',
         method: 'RELATIVE',
         status: 'NOT_STARTED',
-        timerSeconds: 300,
         minEvaluations: 3,
         maxEvaluations: 9,
         targetEvaluations: null,
@@ -93,6 +92,8 @@ export const formatHackathon = createMutation({
         name: null,
         status: 'DRAFT',
         scoreScale: 5,
+        judgingSeconds: 300,
+        judgingPausedAt: null,
         roomSwitchPercent: 25,
       },
     });

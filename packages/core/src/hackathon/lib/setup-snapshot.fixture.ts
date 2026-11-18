@@ -7,6 +7,8 @@ export function snapshot(): SetupSnapshot {
       name: 'RowdyHacks',
       status: 'DRAFT',
       scoreScale: 5,
+      judgingSeconds: 300,
+      judgingPausedAt: null,
       roomSwitchPercent: 25,
       rooms: [
         {
@@ -46,7 +48,6 @@ export function snapshot(): SetupSnapshot {
           challenge: null,
           minEvaluations: 4,
           targetEvaluations: null,
-          timerSeconds: 300,
         },
       ],
     },

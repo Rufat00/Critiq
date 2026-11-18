@@ -98,7 +98,6 @@ export const resetHackathonData = createMutation({
           description: null,
           method: 'RELATIVE',
           status: 'NOT_STARTED',
-          timerSeconds: 300,
           minEvaluations: 3,
           maxEvaluations: 9,
           targetEvaluations: null,

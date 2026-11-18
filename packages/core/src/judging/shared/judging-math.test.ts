@@ -1,5 +1,4 @@
 import { submitRubricEvaluationSchema } from '../schemas/submit-rubric-evaluation-schema';
-import { calculateRemainingJudgeMinutes } from './judge-time-math';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { derivePairwiseVotes } from '../relative/derive-pairwise-votes';
@@ -568,32 +567,6 @@ test('decimal marks accept exact four-place inputs despite binary floating repre
       marks: [{ criterionId: 'c', value: 1.23456 }],
     }).success,
     false,
-  );
-});
-test('remaining judge time includes overlong visits, canceled elapsed time and room travel', () => {
-  const now = new Date('2026-11-17T12:00:00Z');
-  const visits = [
-    {
-      status: 'COMPLETED',
-      estimatedMinutes: 6,
-      createdAt: new Date('2026-11-17T11:40:00Z'),
-      finishedAt: new Date('2026-11-17T11:50:00Z'),
-    },
-    {
-      status: 'CANCELLED',
-      estimatedMinutes: 6,
-      createdAt: new Date('2026-11-17T11:50:00Z'),
-      finishedAt: new Date('2026-11-17T11:55:00Z'),
-    },
-  ];
-  assert.equal(
-    calculateRemainingJudgeMinutes(
-      30,
-      visits,
-      [{ travelMinutes: 2 }, { travelMinutes: 2 }],
-      now,
-    ),
-    13,
   );
 });
 

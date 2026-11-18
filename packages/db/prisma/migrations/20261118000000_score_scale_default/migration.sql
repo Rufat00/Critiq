@@ -1,0 +1,1 @@
+ALTER TABLE "Hackathon" ALTER COLUMN "scoreScale" SET DEFAULT 5;

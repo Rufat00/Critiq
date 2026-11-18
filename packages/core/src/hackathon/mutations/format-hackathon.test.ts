@@ -164,6 +164,8 @@ test('format works outside Ready, clears the name, restores defaults, and audits
       name: null,
       status: 'DRAFT',
       scoreScale: 5,
+      judgingSeconds: 300,
+      judgingPausedAt: null,
       roomSwitchPercent: 25,
     });
     assert.equal(f.state.audits, 1);

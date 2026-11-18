@@ -165,6 +165,8 @@ model Hackathon {
   id                String          @id @default(cuid())
   name              String?
   status            HackathonStatus @default(DRAFT)
+  judgingSeconds    Int             @default(300)
+  judgingPausedAt   DateTime?
   scoreScale        Int             @default(5) // Validate: only 5 or 10.
   // Minimum completed reachable projects per room stay; 0 permits immediate movement.
   roomSwitchPercent Int             @default(25)
@@ -195,7 +197,6 @@ model JudgingCategory {
   // The insert trigger chooses RELATIVE for tracks/Overall and RATING_SCALE for challenges.
   method            JudgingMethod  @default(dbgenerated())
   status            CategoryStatus @default(NOT_STARTED)
-  timerSeconds      Int            @default(300)
   minEvaluations    Int            @default(3)
   maxEvaluations    Int            @default(9)
   // Optional soft target: scheduler works toward this after minimum coverage.
@@ -623,6 +624,10 @@ model JudgingVisit {
   status           AssignmentStatus    @default(ASSIGNED)
   reason           String
   estimatedMinutes Float
+  timerStartedAt DateTime?
+  timerRunningSince DateTime?
+  timerElapsedSeconds Int @default(0)
+  presentationFinishedAt DateTime?
   createdAt        DateTime            @default(now())
   expiresAt        DateTime
   finishedAt       DateTime?

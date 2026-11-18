@@ -13,8 +13,10 @@ const markReadySafely = createSafeAction(markHackathonReady);
 const returnToDraftSafely = createSafeAction(returnHackathonToDraft);
 const startJudgingSafely = createSafeAction(startHackathonJudging);
 
-export async function startHackathonJudgingAction() {
-  const result = await startJudgingSafely({});
+export async function startHackathonJudgingAction(
+  input: Parameters<typeof startHackathonJudging>[1] = {},
+) {
+  const result = await startJudgingSafely(input);
   if (result.ok) revalidatePath('/', 'layout');
   return result;
 }

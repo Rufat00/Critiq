@@ -10,7 +10,7 @@ export function listFeasibleCandidates(
   state: JudgingState,
   judgeId: string,
   currentRoomId: string | undefined,
-  remainingMinutes: number,
+  remainingMinutes = Infinity,
 ): AssignmentCandidate[] {
   const candidates: AssignmentCandidate[] = [];
   for (const project of state.projects) {
@@ -67,9 +67,7 @@ export function listFeasibleCandidates(
             !c.evaluations.some(
               (e) => e.judgeId === j.userId && e.projectId === project.id,
             ) &&
-            state.policy.judges.some(
-              (b) => b.judgeId === j.userId && b.availableMinutes > 0,
-            ),
+            state.policy.judges.some((b) => b.judgeId === j.userId),
         ).length;
         scarcity = Math.max(scarcity, d.minimumDeficit / Math.max(1, eligible));
         if (c.method === 'RELATIVE') {
@@ -127,12 +125,7 @@ export function listFeasibleCandidates(
       currentRoomId && currentRoomId !== project.roomId
         ? state.policy.travelMinutes
         : 0;
-    if (
-      estimatedMinutes + travelMinutes > remainingMinutes ||
-      state.now.getTime() + (estimatedMinutes + travelMinutes) * 60000 >
-        new Date(state.policy.endsAt).getTime()
-    )
-      continue;
+    if (estimatedMinutes + travelMinutes > remainingMinutes) continue;
     // Preserve a specialist's remaining budget for exclusive unmet demands elsewhere.
     const exclusiveMinutes = state.projects
       .filter((p) => p.id !== project.id)

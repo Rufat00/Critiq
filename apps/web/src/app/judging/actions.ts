@@ -1,6 +1,7 @@
 'use server';
 
 import {
+  controlJudgingTimer,
   declareJudgeConflict,
   setJudgeJudgingAvailability,
   requestNextAssignment,
@@ -100,4 +101,11 @@ export async function setJudgeJudgingAvailabilityAction(
   input: Parameters<typeof setJudgeJudgingAvailability>[1],
 ) {
   return setJudgeJudgingAvailabilitySafely(input);
+}
+
+const controlJudgingTimerSafely = createSafeAction(controlJudgingTimer);
+export async function controlJudgingTimerAction(
+  input: Parameters<typeof controlJudgingTimer>[1],
+) {
+  return controlJudgingTimerSafely(input);
 }

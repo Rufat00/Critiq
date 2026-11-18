@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Slider as SliderPrimitive } from 'radix-ui';
 
-import { Label } from '@/components/ui/label';
+import { FieldLabel } from '@/components/ui/field';
 import { cn } from '@/lib/utils';
 
 const scoreFieldColors = {
@@ -58,13 +58,13 @@ export function ScoreField({
       className={cn('w-full min-w-0 space-y-1', scoreFieldColors[variant])}
     >
       <div className="flex items-center justify-between gap-3">
-        <Label
+        <FieldLabel
           id={labelId}
           htmlFor={id}
           className="text-base font-semibold leading-6"
         >
           {label}
-        </Label>
+        </FieldLabel>
         <output
           htmlFor={id}
           className="min-w-16 rounded-full bg-muted px-3 py-0.5 text-center text-base font-semibold tabular-nums text-foreground"

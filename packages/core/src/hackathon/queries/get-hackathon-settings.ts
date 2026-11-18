@@ -14,6 +14,7 @@ export const getHackathonSettings = createQuery({
       id: true,
       name: true,
       scoreScale: true,
+      judgingSeconds: true,
       roomSwitchPercent: true,
       status: true,
     },

@@ -12,7 +12,12 @@ export async function requireVisit(
       assignments: {
         include: {
           evaluation: { include: { scores: true } },
-          category: { include: { judges: { where: { isActive: true } } } },
+          category: {
+            include: {
+              judges: { where: { isActive: true } },
+              challenge: { include: { allowedTracks: true } },
+            },
+          },
         },
       },
       project: {
@@ -45,11 +50,26 @@ export async function requireVisit(
     visit.project.conflicts.some((c) => c.userId === visit.judgeId)
   )
     invalid('The project is unavailable or conflicted.');
+  const trackAccess = await ctx.db.judgeCategory.findFirst({
+    where: {
+      userId: visit.judgeId,
+      categoryId: visit.project.track.categoryId,
+      isActive: true,
+      category: { hackathonId: requireHackathonId(ctx), isEnabled: true },
+    },
+  });
   for (const a of visit.assignments)
     if (
       !a.category.isEnabled ||
       a.category.status !== 'ACTIVE' ||
-      !a.category.judges.some((j) => j.userId === visit.judgeId) ||
+      !(
+        a.category.judges.some((j) => j.userId === visit.judgeId) ||
+        (a.category.kind === 'CHALLENGE' &&
+          trackAccess &&
+          a.category.challenge?.allowedTracks.some(
+            (t) => t.trackId === visit.project.trackId,
+          ))
+      ) ||
       (visit.project.track.categoryId !== a.categoryId &&
         !visit.project.challenges.some(
           (e) => e.challenge.categoryId === a.categoryId,

@@ -36,3 +36,8 @@ export * from './schemas/submit-rating-vote-schema';
 export * from './schemas/submit-rubric-evaluation-schema';
 export * from './schemas/transition-judging-schema';
 export * from './schemas/update-relative-ranking-schema';
+
+export * from './mutations/control-judging-timer';
+export * from './schemas/control-judging-timer-schema';
+export * from './queries/get-admin-judging-dashboard';
+export * from './queries/get-judging-setup';

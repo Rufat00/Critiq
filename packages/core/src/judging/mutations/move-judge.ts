@@ -36,15 +36,9 @@ export const moveJudge = judgingMutation(
       epoch.thresholdPercent,
     );
     if (!progress.canMoveNormally) {
-      const local = listFeasibleCandidates(
-        state,
-        judgeId,
-        epoch.roomId,
-        Math.max(
-          0,
-          (new Date(state.policy.endsAt).getTime() - Date.now()) / 60000,
-        ),
-      ).filter((c) => c.roomId === epoch.roomId);
+      const local = listFeasibleCandidates(state, judgeId, epoch.roomId).filter(
+        (c) => c.roomId === epoch.roomId,
+      );
       if (
         ctx.actor.role === 'JUDGE' &&
         (local.length ||

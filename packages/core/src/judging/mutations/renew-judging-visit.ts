@@ -10,19 +10,15 @@ export const renewJudgingVisit = judgingMutation(
   const visit = await requireVisit(ctx, input.visitId);
   const state = await loadJudgingState(ctx);
   const expiresAt = new Date(
-    Math.min(
-      Date.now() + state.policy.reservationMinutes * 60000,
-      new Date(state.policy.endsAt).getTime(),
-    ),
+    Date.now() + state.policy.reservationMinutes * 60000,
   );
-  if (expiresAt <= new Date()) invalid('The judging window has ended.');
   await ctx.db.judgingVisit.update({
     where: { id: visit.id },
-    data: { status: 'IN_PROGRESS', expiresAt },
+    data: { expiresAt },
   });
   await ctx.db.judgingAssignment.updateMany({
-    where: { visitId: visit.id, status: 'ASSIGNED' },
-    data: { status: 'IN_PROGRESS', expiresAt, startedAt: new Date() },
+    where: { visitId: visit.id, status: { in: ['ASSIGNED', 'IN_PROGRESS'] } },
+    data: { expiresAt },
   });
   return { visitId: visit.id, expiresAt };
 });

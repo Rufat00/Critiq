@@ -6,6 +6,7 @@ const fingerprint = (value: unknown) =>
 export function judgingSetupFingerprint({ hackathon, judges }: SetupSnapshot) {
   return fingerprint({
     scoreScale: hackathon.scoreScale,
+    judgingSeconds: hackathon.judgingSeconds,
     roomSwitchPercent: hackathon.roomSwitchPercent,
     categories: hackathon.categories
       .filter((c) => c.isEnabled)

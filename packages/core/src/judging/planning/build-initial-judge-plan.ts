@@ -90,12 +90,16 @@ function buildGreedyPlan(
         completed: new Set(j.stay.completedProjectIds),
       });
     }
+  const projectOrder = new Map(
+    input.projects.map((project, index) => [project.id, index]),
+  );
   const demand = input.projects
     .flatMap((p) =>
       p.competitionIds.map((k) => ({
         p,
         k,
         policy: input.competitions.find((c) => c.id === k)!,
+        key: key(p.id, k),
       })),
     )
     .filter((d) => d.policy);
@@ -108,19 +112,39 @@ function buildGreedyPlan(
     competitionIds: string[];
     minutes: number;
   }[] = [];
+  // Eligibility changes only when a judge visits this project. Cache it rather
+  // than rescanning every judge inside every demand-sort comparison.
+  const eligibleJudges = new Map(
+    demand.map((d) => [
+      d.key,
+      new Set(
+        input.judges
+          .filter(
+            (j) =>
+              j.competitionIds.includes(d.k) &&
+              !j.conflictProjectIds.includes(d.p.id) &&
+              !visited.has(key(j.id, d.p.id)),
+          )
+          .map((j) => j.id),
+      ),
+    ]),
+  );
+  const projectDemand = new Map(
+    input.projects.map((project) => [
+      project.id,
+      demand.filter((d) => d.p.id === project.id),
+    ]),
+  );
   const eligible = (j: PlanningJudge, d: (typeof demand)[number]) =>
-    j.competitionIds.includes(d.k) &&
-    !j.conflictProjectIds.includes(d.p.id) &&
-    !visited.has(key(j.id, d.p.id));
+    eligibleJudges.get(d.key)!.has(j.id);
   while (true) {
     // Scarce demands and judges first, so generic work does not consume specialists.
     const needs = demand
-      .filter((d) => (counts.get(key(d.p.id, d.k)) ?? 0) < quota(d))
+      .filter((d) => (counts.get(d.key) ?? 0) < quota(d))
       .sort(
         (a, b) =>
-          input.judges.filter((j) => eligible(j, a)).length -
-            input.judges.filter((j) => eligible(j, b)).length ||
-          input.projects.indexOf(a.p) - input.projects.indexOf(b.p),
+          eligibleJudges.get(a.key)!.size - eligibleJudges.get(b.key)!.size ||
+          projectOrder.get(a.p.id)! - projectOrder.get(b.p.id)!,
       );
     let assigned = false;
     for (const d of needs) {
@@ -195,6 +219,8 @@ function buildGreedyPlan(
         remaining.set(j.id, remaining.get(j.id)! - minutes);
         rooms.set(j.id, d.p.roomId);
         visited.add(key(j.id, d.p.id));
+        for (const related of projectDemand.get(d.p.id)!)
+          eligibleJudges.get(related.key)!.delete(j.id);
         for (const k of categories)
           counts.set(key(d.p.id, k), (counts.get(key(d.p.id, k)) ?? 0) + 1);
         assigned = true;
@@ -205,14 +231,13 @@ function buildGreedyPlan(
     if (!assigned) break;
   }
   const unmetMinimums = demand.flatMap((d) => {
-    const deficit =
-      d.policy.minimumEvaluations - (counts.get(key(d.p.id, d.k)) ?? 0);
+    const deficit = d.policy.minimumEvaluations - (counts.get(d.key) ?? 0);
     return deficit > 0
       ? [{ competitionId: d.k, projectId: d.p.id, deficit }]
       : [];
   });
   const unmetTargets = demand.flatMap((d) => {
-    const deficit = quota(d) - (counts.get(key(d.p.id, d.k)) ?? 0);
+    const deficit = quota(d) - (counts.get(d.key) ?? 0);
     return deficit > 0
       ? [{ competitionId: d.k, projectId: d.p.id, deficit }]
       : [];
@@ -227,7 +252,7 @@ function buildGreedyPlan(
     quotas: demand.map((d) => ({
       competitionId: d.k,
       projectId: d.p.id,
-      planned: counts.get(key(d.p.id, d.k)) ?? 0,
+      planned: counts.get(d.key) ?? 0,
     })),
     judgeLoad: input.judges.map((j) => ({
       judgeId: j.id,

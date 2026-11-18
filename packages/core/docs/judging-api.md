@@ -11,13 +11,14 @@ or availability change. There is one hackathon per installation.
 1. Configure projects, mutually exclusive tracks, challenge entries, rooms,
    qualifications, conflicts, and rubrics using the existing setup APIs.
 2. Call `configureJudging` with `expectedRevision: 0`, every enabled competition,
-   available minutes for every qualified judge, and an ISO UTC `endsAt`.
+   every qualified judge. There is no planned event duration or deadline.
    Each competition supplies `minimumEvaluations`, `maximumEvaluations`, and
-   `desiredEvaluations`. The response includes the frozen policy and estimated
+   `desiredEvaluations`. Presentation duration comes from the event-wide
+   `judgingSeconds` setting (default 300 seconds), rather than category settings. The response includes the frozen policy and estimated
    plan, feasible target vector, per-project quotas, judge workload/slack, room
    overrides and unmet minimums. No minimum is silently lowered.
 3. Review `getJudgingPlan`. It returns the saved plan plus a fresh conservative
-   projection using completed evidence, spent time, availability, and current
+   projection using completed evidence, availability, and current
    room stays. `getJudgingCoverageSummary` distinguishes completed and reserved
    counts. A reservation is never evidence that minimum coverage was achieved.
 4. Use the existing Ready/start operations. Starting now requires a current
@@ -48,17 +49,28 @@ ranks use a `1e-9` numerical equality tolerance; IDs order display rows only and
 never select an award winner. Ties remain explicitly unresolved.
 
 After starting, scoring method, estimator, regularization, rubric and eligibility
-cannot change. Pause and supply `amendmentReason` to amend coverage, time or room
+cannot change. Pause and supply `amendmentReason` to amend coverage or room
 policy with optimistic revision checking. Configuration revisions are retained
 in the `judging.configure` audit, including the complete frozen policy and plan.
 
 ## Judge workflow
 
+Active track access also qualifies a judge for challenges open to that track.
+This is resolved from trusted track memberships and challenge/track links during
+planning, dispatch, and score authorization; an invitation does not need a second
+challenge membership. Explicit dedicated challenge qualifications also remain
+supported. Project opt-in, assignments, and coverage caps still apply.
+
+The mobile workspace uses separate screens for project details, the presentation
+timer, track evaluation, and each challenge evaluation. Submitting the track does
+not complete the visit until its targeted challenge evaluations are also resolved.
+
 - `requestNextAssignment({ requestKey })` returns the judge's active reservation,
   a `TERMINAL` prior request result, or `NO_FEASIBLE_ASSIGNMENT`. Retry with the same key
   for the same request; use a new key after terminal visits. Hard eligibility,
-  conflicts, availability, time and coverage limits run inside the transaction.
-- `getJudgeCurrentAssignment` returns only the current judge's project, targeted
+  conflicts, availability and coverage limits run inside the transaction.
+- `getJudgeCurrentAssignment` also returns event stage/timer settings, the judge’s
+  track names and completed project count. It returns only the current judge's project, targeted
   categories, frozen rubric and room progress. It never reveals other judges'
   confidential scores. `getJudgeRelativeRanking` returns the judge's own order
   and its revision.
@@ -69,7 +81,7 @@ in the `judging.configure` audit, including the complete frozen policy and plan.
   IDs, `expectedRevision`, and the complete order including the newly observed
   project. The observation and ranking commit together. Omit visit/assignment
   IDs when revising an existing complete order. Stale changed orders conflict.
-- `renewJudgingVisit` extends an active reservation up to the judging deadline.
+- `renewJudgingVisit` extends an active reservation while judging is running.
   `skipJudgingVisit` accepts an explanation for the whole visit or one unfinished
   category. `completeJudgingVisit` requires all targeted categories completed or
   explicitly skipped and at least one completed category. A physical project
@@ -92,7 +104,9 @@ numbers, suitable for Server Actions.
 ## Organizer workflow and results
 
 `transitionJudging` supports pause, resume and deliberation. Closing requires
-active visits to be resolved. `cancelJudgingVisit` releases unfinished targets
+the exact `eventName`, preserves submitted evidence, and releases unfinished
+assignments in the same audited transaction. Pausing freezes presentation timers
+and reservation clocks; resuming extends reservations by the pause duration. Judges explicitly resume their presentation timers. `cancelJudgingVisit` releases unfinished targets
 with a reason. `setProjectJudgingAvailability` marks temporary unavailability,
 releases active visits, and resolves the flag when the project returns.
 
@@ -124,7 +138,15 @@ large deployments may need narrower locks after profiling.
 
 Thin Server Actions are in `apps/web/src/app/judging/actions.ts` and
 `apps/web/src/app/admin/judging/actions.ts`, using the existing authentication and
-safe-error adapter. Judging UI is not implemented by this change.
+safe-error adapter. The Ready home screen collects per-category minimum/maximum assignments and
+calculates targets before starting. During Judging, setup navigation is hidden
+and the admin home displays track coverage with 30-second polling. Deliberation
+is intentionally empty. The mobile judge workspace reserves projects, persists
+presentation timers, collects track evaluations followed by challenges, and
+preserves recoverable form edits. Overtime is visual feedback and never ends a
+presentation automatically. `controlJudgingTimer` owns start/pause/resume/finish;
+`getAdminJudgingDashboard` exposes completed coverage separately from pending
+assignments.
 
 ## Verification and limits
 
@@ -134,6 +156,10 @@ safe-error adapter. Judging UI is not implemented by this change.
   workflows/concurrency/rollback, then drops only that test database. Requires
   database create permission using the configured connection.
 - `pnpm typecheck`, `pnpm db:validate`: workspace and schema checks.
+
+Judging stays open until an organizer finishes it. Live assignment dispatch has
+no event deadline or per-judge time budget. The planner uses full-project
+capacity to estimate coverage from eligible judges, rather than a timed session.
 
 The planner uses scarcity-first joint visits, shared form timing, frozen room
 stays, conservative reserve, target increments and bounded deterministic restart
@@ -149,3 +175,41 @@ Ordinal mixed-effects models, official rubric bias corrections, optimizer-based
 scheduling and algebraic-connectivity diagnostics remain the explicitly optional
 future extensions described in the specification. Bradley–Terry is configurable,
 not silently promoted over Copeland based on these smoke simulations.
+
+## NPC judges for local development
+
+Run `pnpm judging:npc` to create or reuse 40 clearly named NPC judges in the
+current local development event. The runner distributes judges across populated
+tracks and grants eligible challenge access. Prepare them in Draft or Ready,
+refresh the admin page, calculate the plan, and start judging yourself. The
+runner waits until Judging, respects event pause, and exits at Deliberation.
+It never starts or closes the event. Accounts and simulated scores remain visible
+in the event; no authentication sessions are created.
+
+Presentations last about 45 seconds with staggered arrivals, followed by actual
+relative rankings, rubric marks, and rating votes. The script calls the same core
+operations as the web UI with each real NPC test account's scoped actor context
+and `worker` metadata. It does not bypass assignment or score validation.
+Six actions can execute concurrently while all 40 judges independently progress.
+
+- `pnpm judging:npc --concurrency 1`: reduce simultaneous database actions for larger events while keeping all NPC judges active.
+- `pnpm judging:npc --prepare-only`: prepare accounts without running them.
+- `pnpm judging:npc --judges 40 --presentation-seconds 10`: faster presentations.
+- `pnpm judging:npc --presentation-seconds 330`: exercise overtime with the default five-minute timer.
+- `pnpm judging:npc --stop-when-idle`: exit once no assignments or active visits remain.
+- `pnpm test:judging:npc`: run 40 NPCs through the real workflows in a disposable PostgreSQL database, checking all scoring methods, coverage caps, and complete visit cleanup.
+
+Stop the runner with Ctrl+C (or SIGTERM for a background process). While Judging,
+it releases its unfinished visits through the skip operation. During an event
+pause, reservations are preserved and can be resumed by restarting the runner.
+A process lock prevents two runners from controlling the same NPC accounts.
+The runner refuses production mode and non-local database hosts.
+
+To repeat a local test with the same setup, stop the NPC runner and run
+`pnpm judging:reset --event-name "Your exact event name"`. This deletes the
+current event's judging evidence, rankings, reservations, flags, and saved plan,
+unlocks its rubrics, and returns it to Ready. Projects, rooms, category settings,
+judge accounts, memberships, and existing audit history are retained. The reset
+is atomic, audited, restricted to a local development database, and requires the
+exact current event name. Restart `pnpm judging:npc` afterward; the NPCs wait
+until you calculate a new plan and start judging again.

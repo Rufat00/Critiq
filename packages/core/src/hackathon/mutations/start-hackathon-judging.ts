@@ -44,14 +44,10 @@ export const startHackathonJudging = createMutation({
     const config = await ctx.db.judgingConfiguration.findUnique({
       where: { hackathonId: id },
     });
-    const policy = config?.policy as
-      | { setupFingerprint?: string; endsAt?: string }
-      | undefined;
+    const policy = config?.policy as { setupFingerprint?: string } | undefined;
     if (
       !config ||
-      policy?.setupFingerprint !== judgingSetupFingerprint(snapshot) ||
-      !policy.endsAt ||
-      new Date(policy.endsAt) <= new Date()
+      policy?.setupFingerprint !== judgingSetupFingerprint(snapshot)
     )
       throw new AppError(
         AppErrorCode.INVALID_STATE,

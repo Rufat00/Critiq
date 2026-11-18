@@ -1,3 +1,4 @@
+import { resolveCategoryJudges } from './resolve-category-judges';
 import type { AppContext } from '../../context';
 import { requireHackathonId } from '../../context';
 import {
@@ -33,21 +34,28 @@ export async function loadJudgingState(ctx: AppContext) {
       },
     },
   });
-  const categories = await ctx.db.judgingCategory.findMany({
-    where: { hackathonId, isEnabled: true },
-    include: {
-      judges: {
-        where: {
-          isActive: true,
-          user: { isActive: true, isJudgingAvailable: true, role: 'JUDGE' },
+  const categories = resolveCategoryJudges(
+    await ctx.db.judgingCategory.findMany({
+      where: { hackathonId, isEnabled: true },
+      include: {
+        track: true,
+        challenge: { include: { allowedTracks: true } },
+        judges: {
+          where: {
+            isActive: true,
+            user: { isActive: true, isJudgingAvailable: true, role: 'JUDGE' },
+          },
         },
+        evaluations: { where: { isExcluded: false } },
+        rankings: true,
+        rubric: { include: { criteria: { orderBy: { position: 'asc' } } } },
       },
-      evaluations: { where: { isExcluded: false } },
-      rankings: true,
-      rubric: { include: { criteria: { orderBy: { position: 'asc' } } } },
-    },
+    }),
+  );
+  const event = await ctx.db.hackathon.findUniqueOrThrow({
+    where: { id: hackathonId },
   });
-  const now = new Date();
+  const now = event.judgingPausedAt ?? new Date();
   const visits = await ctx.db.judgingVisit.findMany({
     where: {
       hackathonId,

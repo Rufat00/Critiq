@@ -1,4 +1,3 @@
-import { calculateRemainingJudgeMinutes } from '../shared/judge-time-math';
 import { requestNextAssignmentSchema } from '../schemas/request-next-assignment-schema';
 import { judgingMutation, invalid } from '../shared/judging-operation';
 import { loadJudgingState } from '../shared/load-judging-state';
@@ -40,8 +39,8 @@ export const requestNextAssignment = judgingMutation(
       visit: existing,
     };
   const state = await loadJudgingState(ctx);
-  const budget = state.policy.judges.find((j) => j.judgeId === judgeId);
-  if (!budget) invalid('The judge has no planned available time.');
+  if (!state.policy.judges.some((j) => j.judgeId === judgeId))
+    invalid('The judge is not included in judging.');
   const history = await ctx.db.judgingVisit.findMany({
     where: { hackathonId: event.id, judgeId },
   });
@@ -49,15 +48,18 @@ export const requestNextAssignment = judgingMutation(
     where: { hackathonId: event.id, judgeId },
     orderBy: { enteredAt: 'asc' },
   });
-  const remainingMinutes = calculateRemainingJudgeMinutes(
-    budget.availableMinutes,
-    history,
-    stays,
-    state.now,
-  );
   let epoch = stays.find((s) => s.exitedAt === null);
   const candidates = scoreAssignmentCandidates(
-    listFeasibleCandidates(state, judgeId, epoch?.roomId, remainingMinutes),
+    listFeasibleCandidates(state, judgeId, epoch?.roomId).filter(
+      (candidate) =>
+        !history.some(
+          (visit) =>
+            visit.projectId === candidate.projectId &&
+            visit.status === 'SKIPPED' &&
+            visit.finishedAt &&
+            state.now.getTime() - visit.finishedAt.getTime() < 5 * 60000,
+        ),
+    ),
     state.config.revision + history.length,
   );
   const completed = epoch
@@ -108,10 +110,7 @@ export const requestNextAssignment = judgingMutation(
       reason,
       estimatedMinutes: chosen.estimatedMinutes,
       expiresAt: new Date(
-        Math.min(
-          state.now.getTime() + state.policy.reservationMinutes * 60000,
-          new Date(state.policy.endsAt).getTime(),
-        ),
+        state.now.getTime() + state.policy.reservationMinutes * 60000,
       ),
       assignments: {
         create: chosen.competitionIds.map((categoryId) => ({
@@ -120,10 +119,7 @@ export const requestNextAssignment = judgingMutation(
             (attempts.find((a) => a.categoryId === categoryId)?._max.attempt ??
               0) + 1,
           expiresAt: new Date(
-            Math.min(
-              state.now.getTime() + state.policy.reservationMinutes * 60000,
-              new Date(state.policy.endsAt).getTime(),
-            ),
+            state.now.getTime() + state.policy.reservationMinutes * 60000,
           ),
           judgeId,
           projectId: chosen.projectId,

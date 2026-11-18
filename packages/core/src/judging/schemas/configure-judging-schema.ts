@@ -26,7 +26,10 @@ const categoryPolicy = z
     (c) =>
       c.minimumEvaluations <= c.desiredEvaluations &&
       c.desiredEvaluations <= c.maximumEvaluations,
-    'Require minimum <= desired <= maximum.',
+    {
+      message: 'Minimum must not exceed desired or maximum coverage.',
+      path: ['maximumEvaluations'],
+    },
   )
   .refine(
     (c) => c.criteria.every((v) => v.upper > v.lower),
@@ -40,18 +43,17 @@ export const configureJudgingSchema = z
       .array(
         z.object({
           judgeId: z.string().min(1),
-          availableMinutes: z.number().positive().max(1440),
         }),
       )
-      .min(1)
+      .min(
+        1,
+        'Add at least one active judge with track access before calculating the judging plan.',
+      )
       .max(1000),
-    presentationMinutes: z.number().positive().max(120).default(4),
-    questionsMinutes: z.number().min(0).max(60).default(1),
     travelMinutes: z.number().min(0).max(60).default(2),
     reservePercent: z.number().min(0).max(50).default(15),
     reservationMinutes: z.number().positive().max(120).default(20),
     minRoomCompletionPercent: z.number().int().min(0).max(100).default(25),
-    endsAt: z.iso.datetime(),
     amendmentReason: z.string().trim().min(10).max(2000).optional(),
   })
   .superRefine((v, ctx) => {
@@ -72,6 +74,8 @@ export type JudgingPolicy = Omit<
   'categories'
 > & {
   version: 'CRITIQ_V1';
+  presentationMinutes: number;
+  questionsMinutes: number;
   setupFingerprint: string;
   ratingLabels: typeof ordinalRatingOptions;
   categories: (z.output<typeof categoryPolicy> & {

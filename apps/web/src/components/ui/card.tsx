@@ -2,14 +2,24 @@ import * as React from 'react';
 
 import { cn } from '@/lib/utils';
 
+const cardVariants = {
+  default: 'border-border bg-card',
+  soft: 'border-transparent bg-soft text-soft-foreground',
+  destructive: 'border-destructive/20 bg-destructive-subtle',
+  warning: 'border-warning/20 bg-warning-subtle',
+  info: 'border-info/20 bg-info-subtle',
+  success: 'border-success/20 bg-success-subtle',
+};
+
 const Card = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
+  React.HTMLAttributes<HTMLDivElement> & { variant?: keyof typeof cardVariants }
+>(({ className, variant = 'default', ...props }, ref) => (
   <div
     ref={ref}
     className={cn(
-      'rounded-2xl border border-border bg-card text-card-foreground shadow-none',
+      'rounded-2xl border text-card-foreground shadow-none',
+      cardVariants[variant],
       className,
     )}
     {...props}

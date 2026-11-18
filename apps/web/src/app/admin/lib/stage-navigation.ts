@@ -6,7 +6,7 @@ export const stageLabels: Record<HackathonStage, string> = {
   READY: 'Ready',
   JUDGING: 'Judging',
   PAUSED: 'Paused',
-  DELIBERATION: 'Results review',
+  DELIBERATION: 'Deliberation',
   COMPLETED: 'Completed',
 };
 export function getStageNavigation(stage: HackathonStage) {

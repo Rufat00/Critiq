@@ -1,6 +1,9 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import {
+  getAdminJudgingDashboard,
+  getJudgingSetup,
   setJudgeJudgingAvailability,
   configureJudging,
   getJudgingPlan,
@@ -49,7 +52,9 @@ const transitionJudgingSafely = createSafeAction(transitionJudging);
 export async function transitionJudgingAction(
   input: Parameters<typeof transitionJudging>[1],
 ) {
-  return transitionJudgingSafely(input);
+  const result = await transitionJudgingSafely(input);
+  if (result.ok) revalidatePath('/', 'layout');
+  return result;
 }
 
 const cancelJudgingVisitSafely = createSafeAction(cancelJudgingVisit);
@@ -98,4 +103,13 @@ export async function setJudgeJudgingAvailabilityAction(
   input: Parameters<typeof setJudgeJudgingAvailability>[1],
 ) {
   return setJudgeJudgingAvailabilitySafely(input);
+}
+
+const getDashboardSafely = createSafeAction(getAdminJudgingDashboard);
+export async function getAdminJudgingDashboardAction() {
+  return getDashboardSafely({});
+}
+const getSetupSafely = createSafeAction(getJudgingSetup);
+export async function getJudgingSetupAction() {
+  return getSetupSafely({});
 }

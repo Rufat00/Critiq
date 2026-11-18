@@ -1,8 +1,9 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
 import {
   RiHome5Line,
   RiFolderLine,
@@ -150,9 +151,30 @@ export function AdminShell({
   userName: string;
   children: ReactNode;
 }) {
+  const live = ['JUDGING', 'PAUSED', 'DELIBERATION'].includes(summary.status);
+  const router = useRouter();
+  const pathname = usePathname();
+  useEffect(() => {
+    if (live && pathname !== '/admin') router.replace('/admin');
+  }, [live, pathname, router]);
   return (
     <AdminFrame
-      navigation={<AdminNavigation summary={summary} userName={userName} />}
+      navigation={
+        <div
+          inert={live}
+          aria-hidden={live}
+          className={cn(
+            'grid transition-[grid-template-rows,opacity,transform] duration-300 motion-reduce:transition-none',
+            live
+              ? 'pointer-events-none -translate-y-full grid-rows-[0fr] opacity-0'
+              : 'grid-rows-[1fr] opacity-100',
+          )}
+        >
+          <div className="overflow-hidden">
+            <AdminNavigation summary={summary} userName={userName} />
+          </div>
+        </div>
+      }
     >
       {children}
     </AdminFrame>

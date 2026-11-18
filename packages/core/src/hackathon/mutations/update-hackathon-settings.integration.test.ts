@@ -35,6 +35,7 @@ test(
         for (const roomSwitchPercent of [0, 35, 100]) {
           await updateHackathonSettings(ctx, {
             name: 'Settings integration check',
+            judgingSeconds: 300,
             scoreScale: hackathon.scoreScale as 5 | 10,
             roomSwitchPercent,
           });

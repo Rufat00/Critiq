@@ -1,3 +1,5 @@
+import { resolveCategoryJudges } from '../shared/resolve-category-judges';
+import { getFullCoveragePlanningMinutes } from '../planning/get-full-coverage-planning-minutes';
 import { ordinalRatingOptions } from '@critiq/constants';
 import { readSetupSnapshot } from '../../hackathon/lib/read-setup-snapshot';
 import { judgingSetupFingerprint } from '../shared/judging-setup-fingerprint';
@@ -23,8 +25,6 @@ export const configureJudging = judgingMutation(
     );
   if (event.status === 'PAUSED' && !input.amendmentReason)
     invalid('An amendment reason is required after judging starts.');
-  if (new Date(input.endsAt) <= new Date())
-    invalid('Judging must end in the future.');
   const old = await ctx.db.judgingConfiguration.findUnique({
     where: { hackathonId: event.id },
   });
@@ -40,17 +40,19 @@ export const configureJudging = judgingMutation(
     }))
   )
     invalid('Resolve active visits before amending judging.');
-  const categories = await ctx.db.judgingCategory.findMany({
-    where: { hackathonId: event.id, isEnabled: true },
-    include: {
-      track: true,
-      challenge: true,
-      rubric: { include: { criteria: true } },
-      judges: {
-        where: { isActive: true, user: { isActive: true, role: 'JUDGE' } },
+  const categories = resolveCategoryJudges(
+    await ctx.db.judgingCategory.findMany({
+      where: { hackathonId: event.id, isEnabled: true },
+      include: {
+        track: true,
+        challenge: { include: { allowedTracks: true } },
+        rubric: { include: { criteria: { orderBy: { position: 'asc' } } } },
+        judges: {
+          where: { isActive: true, user: { isActive: true, role: 'JUDGE' } },
+        },
       },
-    },
-  });
+    }),
+  );
   if (
     categories.length !== input.categories.length ||
     input.categories.some((p) => !categories.some((c) => c.id === p.categoryId))
@@ -84,7 +86,7 @@ export const configureJudging = judgingMutation(
     input.judges.some((j) => !judgeIds.includes(j.judgeId)) ||
     judgeIds.some((id) => !input.judges.some((j) => j.judgeId === id))
   )
-    invalid('Set available minutes for every active qualified judge.');
+    invalid('Include every active qualified judge.');
   const policies = input.categories.map((p) => {
     const c = categories.find((c) => c.id === p.categoryId)!;
     const rubric = (c.rubric?.criteria ?? []).map((criterion) => {
@@ -118,7 +120,7 @@ export const configureJudging = judgingMutation(
       )
       .map((p) => p.id)
       .sort();
-    if (!projectIds.length)
+    if (!projectIds.length && c.kind !== 'OVERALL')
       invalid('Each enabled competition must have eligible projects.');
     return { ...p, method: c.method, projectIds, rubric };
   });
@@ -149,15 +151,27 @@ export const configureJudging = judgingMutation(
         invalid('Scoring and eligibility cannot change after judging starts.');
     }
   }
+  const timing = {
+    presentationMinutes: event.judgingSeconds / 60,
+    questionsMinutes: 0,
+  };
   const policy: JudgingPolicy = {
     ...input,
+    ...timing,
     version: 'CRITIQ_V1',
     setupFingerprint: '',
     ratingLabels: ordinalRatingOptions,
     categories: policies,
   };
+  const planningMinutes = getFullCoveragePlanningMinutes({
+    ...input,
+    ...timing,
+    projectCount: projects.length,
+    formMinutes: policies.map((c) => c.formMinutes),
+  });
   const plan = recommendCoverageTargets({
     ...input,
+    ...timing,
     projects: projects.map((p) => ({
       id: p.id,
       roomId: p.roomId!,
@@ -167,7 +181,7 @@ export const configureJudging = judgingMutation(
     })),
     judges: input.judges.map((j) => ({
       id: j.judgeId,
-      minutes: j.availableMinutes,
+      minutes: planningMinutes,
       competitionIds: categories
         .filter((c) => c.judges.some((m) => m.userId === j.judgeId))
         .map((c) => c.id),

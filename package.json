@@ -21,7 +21,10 @@
     "build": "pnpm --filter @critiq/web build",
     "start": "pnpm --filter @critiq/web start",
     "test:judging": "node --import ./packages/db/node_modules/tsx/dist/loader.mjs --test packages/core/src/judging/**/*.test.ts",
-    "test:judging:integration": "node --import ./packages/db/node_modules/tsx/dist/loader.mjs packages/db/scripts/test-judging.ts"
+    "test:judging:integration": "node --import ./packages/db/node_modules/tsx/dist/loader.mjs packages/db/scripts/test-judging.ts",
+    "judging:npc": "node --env-file-if-exists=.env --import ./packages/db/node_modules/tsx/dist/loader.mjs packages/core/scripts/run-npc-judges.ts",
+    "test:judging:npc": "node --import ./packages/db/node_modules/tsx/dist/loader.mjs packages/db/scripts/test-judging.ts --npc",
+    "judging:reset": "node --env-file-if-exists=.env --import ./packages/db/node_modules/tsx/dist/loader.mjs packages/core/scripts/reset-development-judging.ts"
   },
   "devDependencies": {
     "prettier": "3.8.4",

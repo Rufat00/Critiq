@@ -131,7 +131,9 @@ test(
     const categories = [overall, challenge, rubricCategory];
     for (const user of judges)
       await db.judgeCategory.createMany({
-        data: categories.map((c) => ({ categoryId: c.id, userId: user.id })),
+        data: categories
+          .filter((c) => user.id !== judge.id || c.kind !== 'CHALLENGE')
+          .map((c) => ({ categoryId: c.id, userId: user.id })),
       });
     const projects = await Promise.all(
       Array.from({ length: 3 }, (_, i) =>
@@ -153,9 +155,9 @@ test(
     );
     const settings = {
       expectedRevision: 0,
-      endsAt: new Date(Date.now() + 180 * 60000).toISOString(),
+
       minRoomCompletionPercent: 100,
-      judges: judges.map((j) => ({ judgeId: j.id, availableMinutes: 120 })),
+      judges: judges.map((j) => ({ judgeId: j.id })),
       categories: categories.map((c) => ({
         categoryId: c.id,
         minimumEvaluations: 1,
@@ -198,6 +200,11 @@ test(
         assert.equal(saved.revision, 1);
         assert.equal(saved.plan.feasible, true);
         assert.equal(saved.plan.guaranteed, false);
+        assert.equal(
+          saved.policy.presentationMinutes,
+          event.judgingSeconds / 60,
+        );
+        assert.equal(saved.policy.questionsMinutes, 0);
         await fail(api.configureJudging(ctx, settings), 'CONFLICT');
       },
     );
@@ -217,6 +224,21 @@ test(
         assert.equal(a.visit!.id, b.visit!.id);
         current = a;
         assert.equal(a.visit!.assignments.length, 3);
+        assert.equal(
+          await db.judgeCategory.count({
+            where: { userId: judge.id, category: { kind: 'CHALLENGE' } },
+          }),
+          0,
+        );
+        const workspace = await api.getJudgeCurrentAssignment(jctx, {});
+        assert.equal(workspace.visit!.project.challenges.length, 2);
+        assert.equal(
+          workspace.visit!.assignments.filter(
+            (a) => a.category.kind === 'CHALLENGE',
+          ).length,
+          2,
+        );
+
         assert.equal(
           await db.judgingVisit.count({
             where: { judgeId: judge.id, status: 'ASSIGNED' },
@@ -284,6 +306,176 @@ test(
         });
       await api.completeJudgingVisit(c, { visitId: visit.id });
     };
+    await t.test(
+      'persistent presentation timers enforce ownership, survive overtime, and pause with the event',
+      async () => {
+        const visitId = current.visit!.id;
+        await fail(
+          api.controlJudgingTimer(context(judges[1]!), {
+            visitId,
+            action: 'START',
+          }),
+          'FORBIDDEN',
+        );
+        await api.controlJudgingTimer(jctx, { visitId, action: 'START' });
+        const started = await db.judgingVisit.findUniqueOrThrow({
+          where: { id: visitId },
+        });
+        assert.ok(started.timerStartedAt);
+        const renewed = await api.renewJudgingVisit(jctx, { visitId });
+        assert.ok(renewed.expiresAt.getTime() > Date.now() + 19 * 60000);
+        await db.judgingVisit.update({
+          where: { id: visitId },
+          data: { timerRunningSince: new Date(Date.now() - 310000) },
+        });
+        await api.controlJudgingTimer(jctx, { visitId, action: 'PAUSE' });
+        const over = await db.judgingVisit.findUniqueOrThrow({
+          where: { id: visitId },
+        });
+        assert.ok(over.timerElapsedSeconds >= 310);
+        assert.equal(over.presentationFinishedAt, null);
+        await api.controlJudgingTimer(jctx, { visitId, action: 'RESUME' });
+        await api.transitionJudging(ctx, {
+          status: 'PAUSED',
+          reason: 'Organizer pause test',
+        });
+        assert.equal(
+          (await db.judgingVisit.findUniqueOrThrow({ where: { id: visitId } }))
+            .timerRunningSince,
+          null,
+        );
+        assert.equal(
+          (await api.getJudgeCurrentAssignment(jctx, {})).visit!.id,
+          visitId,
+        );
+        await fail(
+          api.controlJudgingTimer(jctx, { visitId, action: 'FINISH' }),
+          'INVALID_STATE',
+        );
+        await fail(
+          api.requestNextAssignment(jctx, { requestKey: 'while-paused' }),
+          'INVALID_STATE',
+        );
+        await api.transitionJudging(ctx, {
+          status: 'JUDGING',
+          reason: 'Organizer resume test',
+        });
+        await api.controlJudgingTimer(jctx, { visitId, action: 'FINISH' });
+        assert.ok(
+          (await api.getJudgeCurrentAssignment(jctx, {})).visit!
+            .presentationFinishedAt,
+        );
+        const dashboard = await api.getAdminJudgingDashboard(ctx, {});
+        assert.equal(dashboard.tracks.length, 1);
+        assert.ok(dashboard.tracks[0]!.projects.some((p) => p.reserved === 1));
+        const ordered = dashboard.tracks[0]!.projects.map((p) => p.assignments);
+        assert.deepEqual(
+          ordered,
+          [...ordered].sort((a, b) => a - b),
+        );
+        await fail(api.getAdminJudgingDashboard(jctx, {}), 'FORBIDDEN');
+      },
+    );
+    await t.test(
+      'closing requires the event name and releases unfinished work atomically',
+      async () => {
+        await fail(
+          api.transitionJudging(ctx, {
+            status: 'DELIBERATION',
+            reason: 'Close judging',
+            eventName: 'Wrong name',
+          }),
+          'INVALID_STATE',
+        );
+        assert.equal(
+          (await db.hackathon.findUniqueOrThrow({ where: { id: event.id } }))
+            .status,
+          'JUDGING',
+        );
+        const rollback = new Error('rollback closing test');
+        await assert.rejects(
+          db.$transaction(async (tx) => {
+            await api.transitionJudging(
+              { ...ctx, db: tx },
+              {
+                status: 'DELIBERATION',
+                reason: 'Close judging',
+                eventName: 'Test Hackathon',
+              },
+            );
+            assert.equal(
+              (
+                await tx.judgingVisit.findUniqueOrThrow({
+                  where: { id: current.visit!.id },
+                })
+              ).status,
+              'SKIPPED',
+            );
+            assert.equal(
+              await tx.judgingAssignment.count({
+                where: {
+                  visitId: current.visit!.id,
+                  status: { in: ['ASSIGNED', 'IN_PROGRESS'] },
+                },
+              }),
+              0,
+            );
+            throw rollback;
+          }),
+          (e) => e === rollback,
+        );
+        assert.ok(
+          ['ASSIGNED', 'IN_PROGRESS'].includes(
+            (
+              await db.judgingVisit.findUniqueOrThrow({
+                where: { id: current.visit!.id },
+              })
+            ).status,
+          ),
+        );
+      },
+    );
+    await t.test(
+      'saving the track evaluation leaves both challenge steps open',
+      async () => {
+        const rollback = new Error(
+          'Restore scoring state after checking step order',
+        );
+        await assert.rejects(
+          db.$transaction(async (tx) => {
+            const scoped = { ...jctx, db: tx };
+            const visit = current.visit!;
+            const track = visit.assignments.find(
+              (a) => a.categoryId === overall.id,
+            )!;
+            await api.updateRelativeRanking(scoped, {
+              categoryId: overall.id,
+              expectedRevision: 0,
+              orderedProjectIds: [visit.projectId],
+              visitId: visit.id,
+              assignmentId: track.id,
+            });
+            const workspace = await api.getJudgeCurrentAssignment(scoped, {});
+            assert.equal(
+              workspace.visit!.assignments.find((a) => a.id === track.id)!
+                .status,
+              'COMPLETED',
+            );
+            const unfinished = workspace.visit!.assignments.filter(
+              (a) => !['COMPLETED', 'SKIPPED'].includes(a.status),
+            );
+            assert.equal(unfinished.length, 2);
+            assert.ok(unfinished.every((a) => a.category.kind === 'CHALLENGE'));
+            await fail(
+              api.completeJudgingVisit(scoped, { visitId: visit.id }),
+              'INVALID_STATE',
+            );
+            throw rollback;
+          }),
+          (error) => error === rollback,
+        );
+      },
+    );
     await t.test(
       'submissions enforce identity, ranges, complete ranking and idempotency',
       async () => {
@@ -517,6 +709,7 @@ test(
         );
         await api.transitionJudging(ctx, {
           status: 'DELIBERATION',
+          eventName: 'Test Hackathon',
           reason: 'All judging completed',
         });
         await fail(

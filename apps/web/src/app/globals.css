@@ -49,6 +49,11 @@
   --neutral-hover: #32353d;
 
   /* Judging statuses: always pair color with a label/icon. */
+  /* Solid fills are separate from status text colors. */
+  --success-fill: #22c55e;
+  --warning-fill: #f5b800;
+  --info-fill: #3b82f6;
+  --destructive-fill: #ef4444;
   --success: #08754f;
   --success-subtle: #e7f6ef;
   --warning: #925900;
@@ -119,6 +124,10 @@
   --neutral: #ffffff;
   --neutral-foreground: #0a0b0d;
   --neutral-hover: #e0e2e7;
+  --success-fill: #4ade80;
+  --warning-fill: #facc15;
+  --info-fill: #60a5fa;
+  --destructive-fill: #fb7185;
   --success: #6ed9ad;
   --success-subtle: #142f25;
   --warning: #f5ca7a;
@@ -223,6 +232,10 @@
   --color-neutral: var(--neutral);
   --color-neutral-foreground: var(--neutral-foreground);
   --color-neutral-hover: var(--neutral-hover);
+  --color-success-fill: var(--success-fill);
+  --color-warning-fill: var(--warning-fill);
+  --color-info-fill: var(--info-fill);
+  --color-destructive-fill: var(--destructive-fill);
   --color-success: var(--success);
   --color-success-subtle: var(--success-subtle);
   --color-warning: var(--warning);
@@ -337,4 +350,26 @@
   .animate-caret-blink {
     animation: none;
   }
+}
+
+@keyframes room-change {
+  0%,
+  100% {
+    transform: scale(1) translateX(0) rotate(0);
+  }
+  22% {
+    transform: scale(1.045) translateX(0) rotate(0);
+  }
+  38% {
+    transform: scale(1.045) translateX(-4px) rotate(-0.8deg);
+  }
+  54% {
+    transform: scale(1.045) translateX(4px) rotate(0.8deg);
+  }
+  70% {
+    transform: scale(1.025) translateX(-2px) rotate(-0.4deg);
+  }
+}
+@utility animate-room-change {
+  animation: room-change 650ms ease-in-out both;
 }

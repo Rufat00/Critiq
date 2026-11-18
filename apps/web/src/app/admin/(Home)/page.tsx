@@ -19,6 +19,8 @@ import { ReadinessActions } from './components/readiness-actions';
 import { getAdminHome } from '../queries';
 import { stageLabels } from '../lib/stage-navigation';
 import { JudgingStageHome } from './components/judging-stage-home';
+import { LiveJudgingDashboard } from './components/live-judging-dashboard';
+import { getDashboard, getSetup } from '../judging/queries';
 import { ExportRoomsButton } from '../rooms/components/export-rooms-button';
 
 export default async function Page({
@@ -31,15 +33,24 @@ export default async function Page({
     searchParams,
     getAuthContext(),
   ]);
-  if (summary.status === 'READY' || summary.status === 'JUDGING') {
-    return <JudgingStageHome summary={summary} />;
-  }
+  if (summary.status === 'DELIBERATION')
+    return <section aria-label="Deliberation" />;
+  if (summary.status === 'JUDGING' || summary.status === 'PAUSED')
+    return <LiveJudgingDashboard initial={await getDashboard()} />;
+  if (summary.status === 'READY')
+    return <JudgingStageHome summary={summary} setup={await getSetup()} />;
   const isDraft = summary.status === 'DRAFT';
   return (
     <>
       <AdminHeading
         actions={
-          <ExportRoomsButton search="" disabled={false} label="Export rooms" />
+          !isDraft && (
+            <ExportRoomsButton
+              search=""
+              disabled={false}
+              label="Export rooms"
+            />
+          )
         }
         title={
           isDraft
@@ -151,7 +162,7 @@ export default async function Page({
                       {category.targetEvaluations
                         ? ` / ${category.targetEvaluations} target`
                         : ''}{' '}
-                      evaluations · {category.timerSeconds}s timer
+                      evaluations · {summary.judgingSeconds / 60} min timer
                     </p>
                   </div>
                 ))

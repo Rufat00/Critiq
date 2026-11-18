@@ -22,14 +22,10 @@ function state(): JudgingState {
   return {
     now: new Date('2026-11-17T10:00:00Z'),
     policy: {
-      endsAt: '2026-11-17T12:00:00Z',
       presentationMinutes: 4,
       questionsMinutes: 1,
       travelMinutes: 2,
-      judges: [
-        { judgeId: 'specialist', availableMinutes: 6 },
-        { judgeId: 'generalist', availableMinutes: 6 },
-      ],
+      judges: [{ judgeId: 'specialist' }, { judgeId: 'generalist' }],
       categories: [
         {
           categoryId: 'general',
@@ -104,7 +100,7 @@ test('hard eligibility rejects conflicts, unavailable projects, duplicates and e
     0,
   );
   assert.equal(listFeasibleCandidates(state(), 'generalist', 'r', 5).length, 0);
-  const ended = state();
-  ended.now = new Date('2026-11-17T12:00:01Z');
-  assert.equal(listFeasibleCandidates(ended, 'generalist', 'r', 30).length, 0);
+  const ongoing = state();
+  ongoing.now = new Date('2036-11-17T12:00:01Z');
+  assert.equal(listFeasibleCandidates(ongoing, 'generalist', 'r').length, 1);
 });

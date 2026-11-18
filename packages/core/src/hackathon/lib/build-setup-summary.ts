@@ -102,11 +102,13 @@ export function buildSetupSummary({ hackathon: h, judges }: SetupSnapshot) {
           category.startedAt ? [category.startedAt.toISOString()] : [],
         )
         .sort()[0] ?? null,
+    judgingSeconds: h.judgingSeconds,
     scoreScale: h.scoreScale,
     blockers,
     warnings,
     fingerprint: fingerprint({
       name: h.name,
+      judgingSeconds: h.judgingSeconds,
       scoreScale: h.scoreScale,
       roomSwitchPercent: h.roomSwitchPercent,
       categories: h.categories.map(
@@ -142,7 +144,6 @@ export function buildSetupSummary({ hackathon: h, judges }: SetupSnapshot) {
       criteria: c.rubric?.criteria.length ?? 0,
       minEvaluations: c.minEvaluations,
       targetEvaluations: c.targetEvaluations,
-      timerSeconds: c.timerSeconds,
     })),
   };
 }

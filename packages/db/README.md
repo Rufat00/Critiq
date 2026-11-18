@@ -64,7 +64,8 @@ unique constraints. A subsequent migration enforces:
 - At most one owner, hackathon, and Overall category per hackathon.
 - Installation ID must be 1; the seed creates the singleton and Overall category.
 - Score scale is 5 or 10; weights and scores are nonnegative.
-- Positive judging timers/minimum coverage; optional target is at least the minimum.
+- Event-wide presentation duration of 60–3600 seconds (default 300), nonnegative
+  persisted visit timers, and positive minimum coverage; optional target is at least the minimum.
 - Valid room rotation percentage, room capacities, project numbers, and assignment attempts.
 - Rankings are 1-based; schema uniqueness prevents duplicate ranking positions.
 - At most one active assignment per judge/category.
